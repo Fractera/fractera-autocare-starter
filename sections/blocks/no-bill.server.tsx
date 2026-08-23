@@ -1,0 +1,88 @@
+import type { SectionRenderer } from '@/sections/contract'
+import { inline } from '@/lib/content/blocks/inline'
+import { H3, Lead, Metric, Small } from '@/components/ui/typography'
+import { badgeClass } from '@/sections/tone'
+import { SectionHead } from '@/sections/section-head.server'
+import { architectureLinkUi } from '@/lib/i18n/architecture-link.i18n'
+
+// Счета, которых не будет: чужое имя, перечёркнутое, и то, что вы перестали за
+// него покупать.
+//
+// 🔒 ДВА ЗАГОЛОВКА РАЗНОГО УРОВНЯ, И ЭТО НЕ ПОВТОР. H2 сверху НАЗЫВАЕТ раздел:
+// без него секция стояла посреди страницы безымянной — доводы были, а чей это
+// довод, страница не говорила. H3 снизу — ВЫВОД, и он обязан стоять после
+// перечня: три зачёркнутых имени доказательства, вывод из них следует. Поставь
+// вывод сверху — и читатель получит заключение раньше основания, то есть
+// просьбу поверить на слово.
+//
+// 🔒 ЗАЧЕРКНУТО ИМЕННО ИМЯ, А НЕ ФРАЗА ЦЕЛИКОМ. Перечёркнутая строка «вы не
+// платите Vercel» читается как отменённое утверждение — ровно наоборот
+// задуманному. Отменён здесь СЧЁТ, и знаком отмены помечено то, за что его
+// выставляют.
+//
+// 🔒 ЧЕРТА ВЫХОДИТ ЗА СЛОВО ОТСТУПОМ, А НЕ ПУСТЫМИ СИМВОЛАМИ (заказ владельца
+// 2026-08-16). У строчного элемента черта проводится через всю инлайн-коробку,
+// включая горизонтальные отступы, — поэтому `px-0.5` (2px) удлиняет её ровно на
+// 2 пикселя с каждой стороны. Пробелы в ДАННЫХ дали бы тот же вид и три беды:
+// они уехали бы в десять языковых ячеек, попали бы в машинную версию страницы
+// («- вы не платите  Vercel ») и исчезли бы при первой же чистке пробелов, а
+// причину их появления никто бы уже не помнил. Оформление не живёт в материале.
+//
+// 🔒 ИМЯ ПОСТАВЩИКА НЕ ПЕРЕВОДИТСЯ НИКОГДА. Оно приходит отдельным полем
+// (`vendor`): переводчику видно, что трогать нечего, рендереру — что зачёркивать.
+// А вот ЯРЛЫК под ним переводится: «база данных» — это то, что человек понимает
+// без знания имени «Neon», и в этом весь его смысл.
+//
+// 🔒 РАЗМЕРЫ И ЦВЕТ ЯРЛЫКА — ИЗ ОБЩИХ МЕСТ. Имя поставщика того же размера, что
+// число в ряду мер (`Metric`): обе полосы — «одна строка, три ячейки», стоят на
+// противоположных концах страницы, и одинаковый знак связывает их в пару. Цвет
+// ярлыка — из общей карты тонов (`sections/tone.ts`), той же, что у ряда
+// возможностей вверху.
+export const noBill: SectionRenderer<'noBill'> = (b, { key: k, lang }) => (
+  <section key={k} aria-labelledby={`${k}-t`} className="my-10">
+    {/* Шапка раздела — ОБЩИЙ примитив, а не своя разметка: одна анатомия у всех
+        разделов страницы держится импортом, а не тем, что я о ней помню. */}
+    <SectionHead
+      id={`${k}-t`}
+      badge={b.badge}
+      title={b.heading}
+      note={b.note ? inline(b.note, `${k}-n`) : undefined}
+    />
+
+    <div className="mt-8 overflow-hidden rounded-2xl border border-border">
+      <ul className="grid list-none divide-y divide-border p-0 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {b.items.map((item, i) => (
+          <li key={`${k}-${i}`} className="flex flex-col items-center gap-2 px-5 py-7 text-center">
+            <Small>{item.text}</Small>
+            {/* Толщина черты задана явно: тонкая линия по крупному слову на
+                телефоне пропадает вовсе, и знак отмены перестаёт читаться. */}
+            <Metric className="px-0.5 text-muted-foreground line-through decoration-2">
+              {item.vendor}
+            </Metric>
+            <span className={`mt-1 ${badgeClass(item.badge.tone)}`}>{item.badge.label}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="border-t border-border bg-muted/40 px-6 py-8 text-center">
+        <H3>{b.title}</H3>
+        <Lead className="mx-auto mt-3 max-w-2xl">{inline(b.text, `${k}-b`)}</Lead>
+
+        {/* 🔒 АДРЕС И ПОДПИСЬ СОБИРАЮТСЯ ЗДЕСЬ, А НЕ ЛЕЖАТ В ДАННЫХ (2026-08-17).
+            Материал говорит только «здесь стоит кнопка на страницу архитектуры»;
+            язык в адресе и слово на кнопке — дело секции. Иначе один и тот же
+            платформенный элемент пришлось бы вписывать в десять языковых ячеек,
+            а его адрес — переименовывать в десяти местах разом. */}
+        {b.cta && (
+          <a
+            href={`/${lang}/${b.cta.page}`}
+            className="mt-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-bold text-foreground hover:bg-primary/20"
+          >
+            {architectureLinkUi(lang).homeCta}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+          </a>
+        )}
+      </div>
+    </div>
+  </section>
+)

@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "titleAuto": {
+      "type": "boolean"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "landing",
+        "portfolio",
+        "corporate",
+        "media",
+        "directory",
+        "booking",
+        "qr-menu",
+        "store",
+        "learning",
+        "tours",
+        "delivery",
+        "marketplace",
+        "saas",
+        "crm",
+        "attestation",
+        "scheduler",
+        "ai-coach",
+        "agents",
+        "competitors",
+        "company-brain",
+        "business-brain",
+        "custom"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private",
+        "headless"
+      ]
+    },
+    "route": {
+      "type": "string"
+    },
+    "published": {
+      "type": "boolean"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "intake",
+        "decomposition",
+        "development",
+        "analysis"
+      ]
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "in-progress",
+        "review",
+        "testing",
+        "extra-cycle",
+        "done"
+      ]
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "intake": {
+      "type": "object",
+      "properties": {
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "answers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "seed": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "questions",
+        "answers",
+        "seed"
+      ],
+      "additionalProperties": {}
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "confirmedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "summary",
+          "confirmed",
+          "confirmedAt",
+          "updatedAt"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "in-progress",
+              "blocked",
+              "done",
+              "cancelled"
+            ]
+          },
+          "importance": {
+            "type": "string",
+            "enum": [
+              "optional",
+              "mandatory",
+              "critical"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "work",
+              "decomposition"
+            ]
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "plan": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "title",
+          "status",
+          "importance",
+          "kind",
+          "cases",
+          "plan",
+          "result",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "path",
+          "purpose"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "intake",
+              "decomposition",
+              "development",
+              "analysis"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "in-progress",
+              "review",
+              "testing",
+              "extra-cycle",
+              "done"
+            ]
+          },
+          "by": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "system"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "phase",
+          "stage",
+          "by"
+        ],
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "type",
+    "surface",
+    "route",
+    "published",
+    "phase",
+    "stage",
+    "createdAt",
+    "updatedAt",
+    "intake",
+    "cases",
+    "steps",
+    "pages",
+    "history"
+  ],
+  "additionalProperties": {}
+}
