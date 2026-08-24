@@ -2,8 +2,6 @@ import type { MetadataRoute } from 'next'
 import { getAppConfig, metaForLang } from '@/config/app-config'
 import { iconUrl } from '@/config/app-config.defaults'
 import { urlFor } from '@/lib/seo/alternates'
-import { getBlogUi } from '@/app/[lang]/(publicLayer)/blog/_data'
-import { catalogueUi } from '@/app/[lang]/(publicLayer)/products/_data'
 
 // Манифест устанавливаемого приложения — НА ЯЗЫК (шаг 504).
 //
@@ -20,8 +18,6 @@ import { catalogueUi } from '@/app/[lang]/(publicLayer)/products/_data'
 export function buildManifest(lang: string): MetadataRoute.Manifest {
   const cfg = getAppConfig()
   const meta = metaForLang(lang)
-  const blog = getBlogUi(lang)
-  const cat = catalogueUi(lang)
 
   const icons: NonNullable<MetadataRoute.Manifest['icons']> = []
   if (cfg.iconSet) {
@@ -63,12 +59,9 @@ export function buildManifest(lang: string): MetadataRoute.Manifest {
     background_color: cfg.pwa.backgroundColor,
     icons,
     categories: ['productivity', 'utilities'],
-    // Быстрые действия при долгом нажатии на значок. Слова берутся из УЖЕ
-    // переведённых разделов — своих строк ярлыки не заводят, поэтому они
-    // появляются на новом языке вместе с ним и не ждут партии перевода.
-    shortcuts: [
-      { name: blog.metaTitle, url: urlFor(lang, '/blog') },
-      { name: cat.metaTitle, url: urlFor(lang, '/products') },
-    ],
+    // 🔒 ЯРЛЫКИ СНЯТЫ (шаг 8). Они вели на `/blog` и `/products` — разделы
+    // шаблона, удалённые вместе с остальными страницами, не вошедшими в
+    // утверждённое дерево. Ярлык на защищённый раздел сюда не годится:
+    // манифест публичен, а такая кнопка обещала бы гостю страницу за дверью.
   }
 }

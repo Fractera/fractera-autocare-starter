@@ -32,9 +32,11 @@ const MARKER = "data-app-column"
 // экрану, предела ширины у них нет вовсе, двигать нечего.
 const NO_COLUMN = new Set(
   [
-    "(protectedLayer)/(staff)/manage/products/error.tsx",
-    "(protectedLayer)/(staff)/manage/products/not-found.tsx",
-    "(protectedLayer)/(staff)/manage/products/[productId]/not-found.tsx",
+    // 🔒 ШАГ 8: ТРИ СТРОКИ ОБРАЗЦА ЗАМЕНЕНЫ ТРЕМЯ СВОИМИ. Паттерн воспроизведён
+    // в разделе «Пациенты» ДО удаления образца — ссылка на удалённое не остаётся.
+    "(protectedLayer)/(staff)/patients/error.tsx",
+    "(protectedLayer)/(staff)/patients/not-found.tsx",
+    "(protectedLayer)/(staff)/patients/[id]/not-found.tsx",
     "error.tsx",
     "not-found.tsx",
   ].map(p => p.split("/").join(path.sep)),

@@ -206,16 +206,6 @@
           "times": 37
         },
         {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 2,
-          "times": 21
-        },
-        {
-          "page": "blog/trillion-dollar-service-opportunity",
-          "order": 1,
-          "times": 11
-        },
-        {
           "page": "cookies",
           "order": 2,
           "times": 2
@@ -248,16 +238,6 @@
           "times": 11
         },
         {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 1,
-          "times": 5
-        },
-        {
-          "page": "blog/trillion-dollar-service-opportunity",
-          "order": 4,
-          "times": 4
-        },
-        {
           "page": "cookies",
           "order": 1,
           "times": 1
@@ -288,11 +268,6 @@
           "page": "architecture",
           "order": 52,
           "times": 3
-        },
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 10,
-          "times": 3
         }
       ]
     },
@@ -305,18 +280,7 @@
       "title": null,
       "description": null,
       "hasCard": false,
-      "usedOn": [
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 4,
-          "times": 1
-        },
-        {
-          "page": "blog/trillion-dollar-service-opportunity",
-          "order": 2,
-          "times": 1
-        }
-      ]
+      "usedOn": []
     },
     {
       "id": "0016",
@@ -332,11 +296,6 @@
           "page": "architecture",
           "order": 6,
           "times": 5
-        },
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 30,
-          "times": 1
         }
       ]
     },
@@ -349,13 +308,7 @@
       "title": null,
       "description": null,
       "hasCard": false,
-      "usedOn": [
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 17,
-          "times": 1
-        }
-      ]
+      "usedOn": []
     },
     {
       "id": "0018",
@@ -366,13 +319,7 @@
       "title": null,
       "description": null,
       "hasCard": false,
-      "usedOn": [
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 27,
-          "times": 1
-        }
-      ]
+      "usedOn": []
     },
     {
       "id": "0019",
@@ -383,13 +330,7 @@
       "title": null,
       "description": null,
       "hasCard": false,
-      "usedOn": [
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 12,
-          "times": 2
-        }
-      ]
+      "usedOn": []
     },
     {
       "id": "0020",
@@ -405,11 +346,6 @@
           "page": "architecture",
           "order": 7,
           "times": 6
-        },
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 37,
-          "times": 1
         }
       ]
     },
@@ -422,13 +358,7 @@
       "title": null,
       "description": null,
       "hasCard": false,
-      "usedOn": [
-        {
-          "page": "blog/the-end-of-prompt-engineering",
-          "order": 35,
-          "times": 1
-        }
-      ]
+      "usedOn": []
     },
     {
       "id": "0021",
@@ -478,13 +408,7 @@
       "title": "the owner's quote, signed from settings",
       "description": "**Type:** Testimonials and social proof (8). The only kind in this type today, and it carries ONE voice —\r\nthe owner's, not a customer's.\r\n\r\n## What it actually draws\r\n\r\nA pull quote with the signature under it: name, role and photo taken from the project settings, not from\r\nthe content.\r\n\r\n🔒 **The drawing itself moved to `sections/pull-quote.server.tsx`** (2026-08-16). The same look was\r\nneeded by a second block — a product rule with no author — and a copy of the gradient would have drifted\r\nfrom the original on the first theme edit. What stayed here is the only thing that belongs to this kind:\r\nTHE SIGNATURE.\r\n\r\n🔒 **Three absolute colours were removed earlier** (step 508, caught by a gate during the move):\r\n`text-gray-400` / `text-gray-500` in the signature and a violet gradient written straight into `style`.\r\nAll of them looked identical in both themes by construction — the same defect that left the blog black\r\nunder the light theme.\r\n\r\n## When to take it\r\n\r\nOne statement the owner stands behind personally, on a page where a person matters more than an\r\nargument.\r\n\r\n## When NOT to take it\r\n\r\n- Several testimonials from different people: no kind does that yet. Say so — do not repeat `founder`\r\n  three times with different names, the signature comes from settings and would be the same every time.\r\n- A quote from a document or an article — that is `quote`.",
       "hasCard": true,
-      "usedOn": [
-        {
-          "page": "blog/trillion-dollar-service-opportunity",
-          "order": 7,
-          "times": 1
-        }
-      ]
+      "usedOn": []
     },
     {
       "id": "0024",
