@@ -88,6 +88,22 @@ const FILES = [
   ["app/[lang]/(protectedLayer)/(admin)/administration/passport/_data/ui.i18n.ts", "PassportUi", 2],
   ["app/[lang]/(protectedLayer)/(admin)/administration/passport/_widgets/dynamic/passport-view/ui.i18n.ts", "PassportViewUi", 2],
   ["lib/i18n/passport-link.i18n.ts", "PassportLinkUi", 2],
+  // 🔒 СКЕЛЕТ ШАГА 7 — ЗАГЛУШКИ, ДВА ЯЗЫКА. Класс словаря страничный: слова
+  // одного маршрута этого проекта, а не переиспользуемая часть продукта.
+  // Обещание — включённый набор (`en,ru`); записано в TRANSLATION-DEBT.md.
+  ["app/[lang]/(protectedLayer)/(staff)/dashboard/_data/ui.i18n.ts", "DashboardUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/tasks/_data/ui.i18n.ts", "TasksUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/patients/_data/ui.i18n.ts", "PatientsUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/patients/[id]/_data/ui.i18n.ts", "PatientCardUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/messages/_data/ui.i18n.ts", "MessagesUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/scenarios/_data/ui.i18n.ts", "ScenariosUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/services/_data/ui.i18n.ts", "ServicesUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/analytics/_data/ui.i18n.ts", "AnalyticsUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/audit/_data/ui.i18n.ts", "AuditUi", 2],
+  ["app/[lang]/(protectedLayer)/(staff)/clients/_data/ui.i18n.ts", "ClientsUi", 2],
+  ["app/[lang]/(protectedLayer)/(account)/cabinet/_data/ui.i18n.ts", "CabinetUi", 2],
+  ["app/[lang]/(protectedLayer)/(admin)/company/_data/ui.i18n.ts", "CompanyUi", 2],
+  ["app/[lang]/(publicLayer)/connect/yclients/_data/ui.i18n.ts", "ConnectYclientsUi", 2],
 ]
 
 /**

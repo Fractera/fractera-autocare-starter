@@ -52,6 +52,14 @@ Strike a line out by deleting it, in the same change that adds the translation.
   right now**. The line stands so that enabling a third language is known to reach these three files;
   their count in `scripts/check-i18n.mjs` changes in that same pass.
 
+- **скелет шага 7** — тринадцать маршрутов утверждённого дерева, по словарю на маршрут:
+  `(staff)/{dashboard,tasks,patients,patients/[id],messages,scenarios,services,analytics,audit,clients}`,
+  `(account)/cabinet`, `(admin)/company`, `(publicLayer)/connect/yclients` · **owes the enabled set** ·
+  это заглушки с заголовком и подписью, слова одного маршрута ЭТОГО проекта, а не переиспользуемая
+  часть продукта: 82 им обещать не за что. Написаны в `en, ru` — включённый набор сегодня, значит
+  **долга нет прямо сейчас**. Строка стоит, чтобы включение третьего языка дошло до этих тринадцати;
+  числа в `scripts/check-i18n.mjs` меняются тем же заходом.
+
 Both users-page entries are registered in `scripts/check-i18n.mjs` with the count the tree actually has, so the gate
 tells the truth today; the promise lives here. When the translations land, the number and these two
 lines change in one go.
@@ -65,3 +73,4 @@ that appears in the switcher on a half-built site is worse than a language nobod
 Page dictionaries are translated outside the project: `npm run i18n:export` → an external model →
 `npm run i18n:import`, which verifies keys and placeholders and warns when the answer came back
 identical to English.
+

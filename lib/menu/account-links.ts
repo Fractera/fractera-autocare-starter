@@ -3,6 +3,17 @@ import { accountingProductsUi } from "@/app/[lang]/(protectedLayer)/(finance)/ac
 import { administrationProductsUi } from "@/app/[lang]/(protectedLayer)/(admin)/administration/products/_data/ui.i18n"
 import { shoppingProductsUi } from "@/app/[lang]/(protectedLayer)/(account)/shopping/products/_data/ui.i18n"
 import { administrationUsersUi } from "@/app/[lang]/(protectedLayer)/(admin)/administration/users/_data/ui.i18n"
+import { cabinetUi } from "@/app/[lang]/(protectedLayer)/(account)/cabinet/_data/ui.i18n"
+import { dashboardUi } from "@/app/[lang]/(protectedLayer)/(staff)/dashboard/_data/ui.i18n"
+import { tasksUi } from "@/app/[lang]/(protectedLayer)/(staff)/tasks/_data/ui.i18n"
+import { patientsUi } from "@/app/[lang]/(protectedLayer)/(staff)/patients/_data/ui.i18n"
+import { messagesUi } from "@/app/[lang]/(protectedLayer)/(staff)/messages/_data/ui.i18n"
+import { scenariosUi } from "@/app/[lang]/(protectedLayer)/(staff)/scenarios/_data/ui.i18n"
+import { servicesUi } from "@/app/[lang]/(protectedLayer)/(staff)/services/_data/ui.i18n"
+import { analyticsUi } from "@/app/[lang]/(protectedLayer)/(staff)/analytics/_data/ui.i18n"
+import { auditUi } from "@/app/[lang]/(protectedLayer)/(staff)/audit/_data/ui.i18n"
+import { clientsUi } from "@/app/[lang]/(protectedLayer)/(staff)/clients/_data/ui.i18n"
+import { companyUi } from "@/app/[lang]/(protectedLayer)/(admin)/company/_data/ui.i18n"
 import type { DrawerLink } from "@/components/menu/account/account-drawer.client"
 
 // РАБОЧИЕ РАЗДЕЛЫ, которые ящик аккаунта показывает вошедшему.
@@ -39,5 +50,20 @@ export function accountLinks(lang: string): DrawerLink[] {
     { href: `/${lang}/accounting/products`, label: accountingProductsUi(lang).title, group: "finance" },
     { href: `/${lang}/administration/products`, label: administrationProductsUi(lang).title, group: "admin" },
     { href: `/${lang}/administration/users`, label: administrationUsersUi(lang).title, group: "admin" },
+    // ── СКЕЛЕТ ШАГА 7 ─────────────────────────────────────────────────────
+    // Маршруты утверждённого дерева. Пока заглушки: владелец должен ходить по
+    // дереву обычной навигацией, а не набирать адреса руками — ровно тот дефект,
+    // ради которого этот файл и появился (см. шапку).
+    { href: `/${lang}/cabinet`, label: cabinetUi(lang).title, group: "account" },
+    { href: `/${lang}/dashboard`, label: dashboardUi(lang).title, group: "staff" },
+    { href: `/${lang}/tasks`, label: tasksUi(lang).title, group: "staff" },
+    { href: `/${lang}/patients`, label: patientsUi(lang).title, group: "staff" },
+    { href: `/${lang}/messages`, label: messagesUi(lang).title, group: "staff" },
+    { href: `/${lang}/scenarios`, label: scenariosUi(lang).title, group: "staff" },
+    { href: `/${lang}/services`, label: servicesUi(lang).title, group: "staff" },
+    { href: `/${lang}/analytics`, label: analyticsUi(lang).title, group: "staff" },
+    { href: `/${lang}/audit`, label: auditUi(lang).title, group: "staff" },
+    { href: `/${lang}/clients`, label: clientsUi(lang).title, group: "staff" },
+    { href: `/${lang}/company`, label: companyUi(lang).title, group: "admin" },
   ]
 }

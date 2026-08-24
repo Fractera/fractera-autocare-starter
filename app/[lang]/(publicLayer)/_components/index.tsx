@@ -1,8 +1,6 @@
 import { createContentPage } from '@/lib/content/create-content-page'
-import { homePage, homeLead } from '../_data'
+import { homePage } from '../_data'
 import { meta } from '../_data/meta'
-import { PostBody } from '@/components/content-page/post-body'
-import { SecurityOrbit } from '../_widgets/static/security-orbit'
 
 // Вход главной страницы — ТА ЖЕ ФАБРИКА, ЧТО У ПОСТА И ПРАВОВЫХ СТРАНИЦ.
 //
@@ -29,27 +27,12 @@ const page = createContentPage({
   // секция, а шапка страницы своего H1 не рисует — иначе их окажется два, и в
   // выдаче они спорят между собой. Метаданные и разметку по-прежнему строит
   // фабрика из того же `title`.
-  titleInBody: true,
-  // 🔒 ЧТО СТОИТ СРАЗУ ЗА ПЕРВЫМ ЭКРАНОМ. Слот один, и в нём по порядку: группа
-  // мер с ярлыками (её блоки поднимает `homeLead`) и виджет безопасности из
-  // папки этого маршрута (`_widgets/static/security-orbit`). Виджет приходит
-  // одной строкой: маршрут решает, что показать, платформа — где.
+  // 🔒 СЛОТ `afterHero` СНЯТ (шаг 7, решение владельца о минимальной заглушке).
+  // Здесь стояли ряд блоков `homeLead` и статический виджет `security-orbit`.
   //
-  // 🔒 АНИМАЦИЯ ВНУТРИ ОСТРОВКА, А НЕ НА СТРАНИЦЕ. Страница обязана остаться
-  // предрендеренной: разметку виджета печатает сервер, движение приезжает
-  // отдельным куском по первому нажатию или входу указателя (`swap.client.tsx`).
-  // Анимация, поднятая на уровень страницы, увела бы главную в динамику и вместе
-  // с ней — поисковую выдачу.
-  afterHero: (lang: string) => (
-    <>
-      {/* Ряд мер и ярлыки — ВЫШЕ виджетов и вне ленты, но по её ширине: метка
-          data-app-column подчиняет их переключателю ширины, как и текст ниже. */}
-      <div data-app-column className="px-6">
-        <PostBody blocks={homeLead(lang)} lang={lang} />
-      </div>
-      <SecurityOrbit lang={lang} />
-    </>
-  ),
+  // 🔒 Это ВИДИМОСТЬ, а не удаление: и функция, и папка виджета
+  // `_widgets/static/security-orbit` остались на месте нетронутыми и
+  // возвращаются на главную одной строкой. Построенное не удаляем.
 })
 
 export const generateMetadata = page.generateMetadata
