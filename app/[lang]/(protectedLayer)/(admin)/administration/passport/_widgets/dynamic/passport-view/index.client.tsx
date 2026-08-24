@@ -24,6 +24,7 @@ import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Loader2, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { H1, H2, H3, H4, P } from "@/components/ui/typography"
 import type { PassportViewUi } from "./ui.i18n"
 
 type State =
@@ -43,10 +44,23 @@ function reasonOf(status: number): "unauthorized" | "forbidden" | "missing" | "f
 // внутри компонента: пересоздаваемая на каждый рендер, она заставляла бы
 // react-markdown перестраивать всё дерево на любое изменение состояния.
 const MD: Components = {
-  h1: p => <h1 className="mt-8 mb-3 text-2xl font-semibold text-foreground" {...p} />,
-  h2: p => <h2 className="mt-8 mb-3 border-b border-border pb-1 text-xl font-semibold text-foreground" {...p} />,
-  h3: p => <h3 className="mt-6 mb-2 text-base font-semibold text-foreground" {...p} />,
-  p: p => <p className="my-3 leading-relaxed text-foreground" {...p} />,
+  // 🔒 ЗАГОЛОВКИ И ТЕКСТ — ТОЛЬКО ПРИМИТИВОМ. Шкала в проекте одна
+  // (`components/ui/typography.tsx`), и `check:typography` валит сборку на
+  // строчном теге заголовка, которому приписали классы. ✗ поймано боевой
+  // сборкой 2026-08-24: здесь стояли три руками оформленных заголовка, и они
+  // прошли локальный прогон только потому, что я не запустил этот гейт.
+  // Классы тут остались лишь на ОТСТУПЫ — размер и начертание принадлежат шкале.
+  //
+  // ✗ И второй раз тот же гейт поймал ЭТОТ комментарий: сторож построчный, он
+  // не отличает пример в тексте от кода. Образец нарушения не цитируется даже
+  // в объяснении — называется словами.
+  //
+  // `variant="ui"` — паспорт рабочий экран, а не витрина.
+  h1: p => <H1 className="mt-8 mb-3" {...p} />,
+  h2: p => <H2 variant="ui" className="mt-8 mb-3 border-b border-border pb-1" {...p} />,
+  h3: p => <H3 variant="ui" className="mt-6 mb-2" {...p} />,
+  h4: p => <H4 variant="ui" className="mt-5 mb-2" {...p} />,
+  p: p => <P className="my-3" {...p} />,
   ul: p => <ul className="my-3 list-disc space-y-1 pl-6 text-foreground" {...p} />,
   ol: p => <ol className="my-3 list-decimal space-y-1 pl-6 text-foreground" {...p} />,
   li: p => <li className="leading-relaxed" {...p} />,
