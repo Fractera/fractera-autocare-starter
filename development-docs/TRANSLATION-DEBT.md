@@ -42,7 +42,17 @@ Strike a line out by deleting it, in the same change that adds the translation.
   for a widget, by the owner's decision of 2026-08-21, not 82: a widget belongs to one route and never
   appears in a language on its own. Written in `en, ru`.
 
-Both are registered in `scripts/check-i18n.mjs` with the count the tree actually has, so the gate
+- `app/[lang]/(protectedLayer)/(admin)/administration/passport/` (two dictionaries) and
+  `lib/i18n/passport-link.i18n.ts` — the project passport page, its widget and the footer button ·
+  **owes the enabled set, not 82 and not 10** · this is the promise, and it is the only part of the line
+  that cannot be derived. The neighbours under `administration/` owe 82 because they SHIP WITH THE
+  PRODUCT to a client who may switch any language on; the passport is a document of THIS deployment,
+  read by the architect of this server and nobody else — promising it 82 languages would record a debt
+  no one will ever collect. Written in `en, ru`, which is the enabled set today, so **nothing is owed
+  right now**. The line stands so that enabling a third language is known to reach these three files;
+  their count in `scripts/check-i18n.mjs` changes in that same pass.
+
+Both users-page entries are registered in `scripts/check-i18n.mjs` with the count the tree actually has, so the gate
 tells the truth today; the promise lives here. When the translations land, the number and these two
 lines change in one go.
 

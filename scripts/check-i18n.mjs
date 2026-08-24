@@ -77,6 +77,17 @@ const FILES = [
   // в реестре долга, и оба меняются одним заходом, когда придёт перевод.
   ["app/[lang]/(protectedLayer)/(admin)/administration/users/_data/ui.i18n.ts", "AdministrationUsersUi", 2],
   ["app/[lang]/(protectedLayer)/(admin)/administration/users/_widgets/dynamic/users-table/ui.i18n.ts", "UsersTableUi", 2],
+  // 🔒 ПАСПОРТ ПРОЕКТА — ДВА ЯЗЫКА, И ЭТО НЕ ДОЛГ, А КЛАСС СЛОВАРЯ (шаг 3,
+  // 2026-08-24). Соседи по `administration/` обязаны 82: они ЕДУТ С ПРОДУКТОМ к
+  // клиенту, который вправе включить любой язык. Паспорт — документ ЭТОГО
+  // развёртывания, его читает архитектор этого сервера и никто больше; обещать
+  // ему 82 языка значило бы записать долг, который никому не понадобится.
+  // Обещание — включённый набор (`NEXT_PUBLIC_SUPPORTED_LANGUAGES=en,ru`), и
+  // оно записано в `TRANSLATION-DEBT.md`: включит владелец третий язык — эти
+  // три словаря идут следом, и число здесь меняется тем же заходом.
+  ["app/[lang]/(protectedLayer)/(admin)/administration/passport/_data/ui.i18n.ts", "PassportUi", 2],
+  ["app/[lang]/(protectedLayer)/(admin)/administration/passport/_widgets/dynamic/passport-view/ui.i18n.ts", "PassportViewUi", 2],
+  ["lib/i18n/passport-link.i18n.ts", "PassportLinkUi", 2],
 ]
 
 /**

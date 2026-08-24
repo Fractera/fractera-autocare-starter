@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Linkedin, Facebook, Boxes, SlidersHorizontal } from "lucide-react";
+import { Github, Linkedin, Facebook, Boxes, SlidersHorizontal, FileText } from "lucide-react";
 import { BrandX } from "@/components/icons/brand-x";
 import { getAppConfig } from "@/config/app-config";
 import { resolveSocialLinks, socialHref } from "@/config/app-config.defaults";
@@ -22,6 +22,7 @@ import { accountLinks } from "@/lib/menu/account-links";
 import { cartUi } from "@/components/cart/cart.i18n";
 import { appDialogUi } from "@/components/dialog/app-dialog.i18n"
 import { architectureLinkUi } from "@/lib/i18n/architecture-link.i18n";
+import { passportLinkUi } from "@/lib/i18n/passport-link.i18n";
 
 // Always-present FOOTER menu (step 160), mirroring FES site-footer in look & behaviour
 // (re-programmed, not copied). Three sections:
@@ -150,10 +151,17 @@ export function FooterMenu({ lang }: { lang: string }) {
             собирает владелец. Второй список ссылок делил подвал по признаку,
             которого в настройках не существует. */}
 
-        {/* Полоса действий: вход и настройки cookie. Обе появляются только когда
-            включены соответствующие возможности, поэтому у проекта без них
-            подвал выглядит ровно как раньше — пустой полосы не остаётся. */}
-        {(authSide || bannerOn || adminUrl) && (
+        {/* Полоса действий: вход, настройки cookie, архитектура, ПАСПОРТ и панель.
+            Первые две появляются только когда включены соответствующие
+            возможности; архитектура и паспорт стоят всегда. */}
+        {/* 🔒 УСЛОВИЕ СНЯТО: полоса действий больше не бывает пустой — кнопка
+            паспорта стоит в ней ВСЕГДА (решение владельца 2026-08-24). Прежнее
+            `(authSide || bannerOn || adminUrl)` берегло проект без этих трёх
+            возможностей от пустой полосы; теперь четвёртая кнопка безусловна, и
+            условие всегда истинно. Оставить его значило бы держать проверку,
+            которая ничего не проверяет, — а такую следующая сессия принимает за
+            действующую и строит вокруг. */}
+        {(
           <div className="flex flex-wrap items-center gap-2">
             {authSide && (
               <AccountButton
@@ -187,6 +195,31 @@ export function FooterMenu({ lang }: { lang: string }) {
                   украшение; на узком экране режется украшение. */}
               <Boxes className="hidden size-3.5 sm:inline-block" />
               {architectureLinkUi(lang).footer}
+            </Link>
+
+            {/* 🔒 ПАСПОРТ ПРОЕКТА — КНОПКА ВИДНА ВСЕГДА (решение владельца
+                2026-08-24), хотя страница за ней ЗАЩИЩЕНА ролью `architect`.
+                Это осознанное отступление от `use-roles` §6, и разводится оно
+                так: закон запрещает публичную кнопку, ведущую в ТУПИКОВЫЙ 403.
+                Здесь тупика нет — страница встречает объясняющим окном
+                `AccessGate`, которое называет причину и ведёт на вход. То есть
+                кнопка ведёт ровно в тот знак, который закон и называет знаком.
+                Обещание сайта держится: посетителю не показывают закрытую дверь
+                без ручки.
+                Стоит в полосе ДЕЙСТВИЙ, а не в списке страниц подвала выше: тот
+                список владелец собирает в панели, и чужая строка в нём читалась
+                бы как его собственная забытая настройка.
+                `Link`, а не `<a>`: адрес внутренний. Индексации бояться нечего —
+                весь защищённый слой объявлен `robots: { index: false }` в своём
+                макете, и страница паспорта наследует это. */}
+            <Link
+              href={`/${lang}/administration/passport`}
+              className={buttonVariants({ variant: "ghost", size: "sm" }) + " gap-1.5 text-muted-foreground hover:text-foreground"}
+            >
+              {/* Значок режется на узком экране — как у соседей: слово несёт
+                  смысл, значок украшает, и на телефоне режется украшение. */}
+              <FileText className="hidden size-3.5 sm:inline-block" />
+              {passportLinkUi(lang).footer}
             </Link>
 
             {/* 🔒 ВХОД В ПАНЕЛЬ УПРАВЛЕНИЯ (владелец 2026-08-14).
