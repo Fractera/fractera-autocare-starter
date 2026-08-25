@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import type { AuthShellSide } from "@/components/menu/account/account-config";
 import type { AccountLabels } from "@/components/menu/account/account-menu.i18n";
+import { AccountDropdown } from "@/components/menu/account/account-dropdown.client";
 import { PROTECTED_GROUP_ROLES, type ProtectedGroup } from "@/lib/roles";
 import { H3 } from "@/components/ui/typography";
 import { FLOW_COLOR } from "@/lib/flows";
@@ -68,17 +69,37 @@ export function AccountDrawer({ lang, side, labels, email, roles, links }: {
   const [open, setOpen] = useState(false);
   const roleList = roles && roles.length ? roles : [];
 
-  // Блок показывается, если человек ПРИНАДЛЕЖИТ слою, а не если в слое есть
-  // страницы: слой без страниц — это «здесь пока ничего не построено», и сказать
-  // это честнее, чем спрятать слой и оставить человека в уверенности, что прав у
-  // него меньше, чем есть.
+  // 🪦 БЫЛО: «блок показывается, если человек ПРИНАДЛЕЖИТ слою, а не если в слое
+  // есть страницы; слой без страниц — это 'здесь пока ничего не построено', и
+  // сказать это честнее, чем спрятать слой».
+  //
+  // 🔒 ОТМЕНЕНО ВЛАДЕЛЬЦЕМ 2026-08-25, дословно: «если в ящике не существует ни
+  // одной ссылки у раздела, то раздел это тоже не нужно отображать».
+  //
+  // Прежнее правило родилось в шаблоне, где пустых слоёв не бывало: страницы
+  // стояли во всех четырёх. В этом проекте слой `finance` не используется вовсе
+  // (весь рабочий интерфейс у менеджера), и пустой заголовок раздела перестал
+  // сообщать «ещё не построено» — он сообщает «здесь ничего и не будет».
   const sections = GROUP_ORDER
     .filter((g) => PROTECTED_GROUP_ROLES[g].some((r) => roleList.includes(r)))
     .map((g) => ({
       group: g,
       title: labels[GROUP_LABEL[g]],
       links: (links ?? []).filter((l) => l.group === g),
-    }));
+    }))
+    .filter((s) => s.links.length > 0);
+
+  // 🔒 НЕТ НИ ОДНОЙ СЕКЦИИ — ЗНАЧИТ НЕ ЯЩИК, А ВЫПАДАЮЩЕЕ МЕНЮ.
+  // Решение владельца 2026-08-25, дословно: «если у ящика нет вообще ни одной
+  // активной секции с ссылками, то вместо ящика показывай Drop Down меню. Нет
+  // смысла открывать огромный ящик, чтобы показать одну ссылку внизу».
+  //
+  // Решение «какая форма» стоит ЗДЕСЬ и только здесь; сама форма живёт своим
+  // файлом (`account-dropdown.client.tsx`) — ящик и без того шёл к пределу в
+  // 250 строк.
+  if (sections.length === 0) {
+    return <AccountDropdown lang={lang} side={side} labels={labels} email={email} roles={roles} />;
+  }
 
   return (
     <>
