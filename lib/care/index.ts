@@ -352,3 +352,117 @@ export async function lastConsentRun(): Promise<LastConsent | null> {
     return null
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ЗАДАЧИ — очередь контактов.
+//
+// 🔒 ЧТО ТАКОЕ «ОТКРЫТАЯ», ЗНАЕТ ОДИН `OPEN_TASK_STATUSES` ВЫШЕ. Здесь он не
+// переписывается строкой: разойдись перечисления — счётчик на кнопке перестанет
+// сходиться со списком под ней.
+
+/** Закрытые статусы: работа по задаче окончена, чем бы ни кончилась. */
+export const DONE_TASK_STATUSES = ["contacted", "booked", "no_answer", "declined"] as const
+const DONE = DONE_TASK_STATUSES.map(s => `'${s}'`).join(",")
+
+/** Все семь статусов. Список закрыт — он же стоит в `CHECK` схемы. */
+export const TASK_STATUSES = [...OPEN_TASK_STATUSES, ...DONE_TASK_STATUSES] as const
+export type TaskStatus = (typeof TASK_STATUSES)[number]
+
+/** Что показывает очередь. `today` — рабочий отбор: срок наступил и не закрыто. */
+export const TASK_SCOPES = ["today", "open", "done", "all"] as const
+export type TaskScope = (typeof TASK_SCOPES)[number]
+
+export type CareTaskRow = {
+  id: string
+  person_id: string
+  scenario_id: string | null
+  assignee: string | null
+  status: TaskStatus
+  due_date: string
+  generated_message: string | null
+  final_message: string | null
+  result_comment: string | null
+  created_at: string
+  updated_at: string
+  /** Личность подтягивается для экрана: очередь без имени бесполезна. */
+  full_name: string
+  phone: string
+  consent_to_contact: number
+  scenario_title: string | null
+}
+
+const TASK_SELECT = `
+  SELECT t.id, t.person_id, t.scenario_id, t.assignee, t.status, t.due_date,
+         t.generated_message, t.final_message, t.result_comment, t.created_at, t.updated_at,
+         p.full_name, p.phone, p.consent_to_contact,
+         s.title AS scenario_title
+    FROM care_tasks t
+    JOIN care_people p ON p.id = t.person_id
+    LEFT JOIN care_scenarios s ON s.id = t.scenario_id`
+
+/**
+ * Условие отбора очереди.
+ *
+ * 🔒 `today` — ЭТО «СРОК НАСТУПИЛ», А НЕ «СРОК СЕГОДНЯ». Просроченное вчера
+ * обязано остаться в работе: задача, выпавшая из очереди из-за того, что её
+ * не успели сделать в срок, — это потерянный человек.
+ */
+function taskWhere(scope: TaskScope): string {
+  if (scope === "today") return ` WHERE t.status IN (${OPEN}) AND t.due_date <= date('now')`
+  if (scope === "open") return ` WHERE t.status IN (${OPEN})`
+  if (scope === "done") return ` WHERE t.status IN (${DONE})`
+  return ""
+}
+
+/**
+ * Страница очереди.
+ *
+ * 🔒 ПОРЯДОК ДЕТЕРМИНИРОВАН — с добивкой по `id`. У задач одного дня одинаковый
+ * срок, и без последнего ключа одна и та же задача попадёт на две страницы, а
+ * другая не попадёт ни на одну.
+ */
+export async function tasksPage(
+  { scope = "today", limit = DEFAULT_PAGE_SIZE, offset = 0 }:
+  { scope?: TaskScope; limit?: number; offset?: number },
+): Promise<CareTaskRow[]> {
+  const rows = await db
+    .prepare(
+      `${TASK_SELECT} ${taskWhere(scope)}
+       ORDER BY t.due_date ASC, t.created_at ASC, t.id
+       LIMIT ? OFFSET ?`,
+    )
+    .all(limit, offset)
+  return rows as unknown as CareTaskRow[]
+}
+
+/** Сколько задач в выборке — тем же условием, что и сам список. */
+export async function tasksCount(scope: TaskScope = "today"): Promise<number> {
+  const row = (await db
+    .prepare(`SELECT COUNT(*) AS n FROM care_tasks t ${taskWhere(scope)}`)
+    .get()) as { n: number } | undefined
+  return Number(row?.n ?? 0)
+}
+
+/**
+ * Счётчики по всем отборам сразу — ОДНИМ запросом.
+ *
+ * 🔒 Четыре отдельных запроса дали бы четыре момента времени, и сумма вкладок
+ * могла бы не сойтись с содержимым ни одной из них прямо на экране.
+ */
+export async function taskCounts(): Promise<Record<TaskScope, number>> {
+  const row = (await db
+    .prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM care_tasks WHERE status IN (${OPEN}) AND due_date <= date('now')) AS today,
+         (SELECT COUNT(*) FROM care_tasks WHERE status IN (${OPEN}))  AS open,
+         (SELECT COUNT(*) FROM care_tasks WHERE status IN (${DONE}))  AS done,
+         (SELECT COUNT(*) FROM care_tasks)                            AS all_`,
+    )
+    .get()) as Record<string, number> | undefined
+  return {
+    today: Number(row?.today ?? 0),
+    open: Number(row?.open ?? 0),
+    done: Number(row?.done ?? 0),
+    all: Number(row?.all_ ?? 0),
+  }
+}
