@@ -116,6 +116,34 @@ const PERSON_SELECT = `
          (ot.person_id  IS NOT NULL) AS has_open_task`
 
 /**
+ * Условие поиска — ОДНО на список и на счёт.
+ *
+ * 🔒 ПУСТОЙ ШАБЛОН ТЕЛЕФОНА НЕ ДОБАВЛЯЕТСЯ В УСЛОВИЕ. ✗ Оплачено 2026-08-25:
+ * условие строилось как `full_name LIKE ? OR phone LIKE ?` всегда, а для
+ * нечислового запроса второй шаблон вырождался в `%%` — он совпадает с КАЖДОЙ
+ * строкой, и `OR` пропускал всю базу. Поиск «Иван» возвращал 1844 человека из
+ * 1844 и выглядел работающим: строки приходили, счётчик не менялся, а что
+ * фильтр не отсеял никого, видно только если знать общее число.
+ *
+ * 🔒 И ЭТО ОДНА ФУНКЦИЯ, А НЕ ДВЕ ОДИНАКОВЫХ. Список и счёт обязаны отбирать
+ * ровно одно и то же: разойдись они — подпись «найдено 12» встанет над сорока
+ * строками, и доверия не будет ни к той, ни к другой цифре.
+ */
+function searchWhere(q?: string): { where: string; args: string[] } {
+  const text = q?.trim()
+  if (!text) return { where: "", args: [] }
+
+  const digits = text.replace(/[^\d+]/g, "")
+  const parts = ["p.full_name LIKE ?"]
+  const args = [`%${text}%`]
+  if (digits) {
+    parts.push("p.phone LIKE ?")
+    args.push(`%${digits}%`)
+  }
+  return { where: ` WHERE ${parts.join(" OR ")}`, args }
+}
+
+/**
  * Страница списка людей.
  *
  * 🔒 ПОРЯДОК СТРОГО ДЕТЕРМИНИРОВАН — с добивкой по `id`. У многих одинаковый
@@ -125,8 +153,7 @@ const PERSON_SELECT = `
 export async function peoplePage(
   { q, limit = DEFAULT_PAGE_SIZE, offset = 0 }: { q?: string; limit?: number; offset?: number },
 ): Promise<CarePersonRow[]> {
-  const where = q ? " WHERE p.full_name LIKE ? OR p.phone LIKE ?" : ""
-  const args = q ? [`%${q}%`, `%${q.replace(/[^\d+]/g, "")}%`] : []
+  const { where, args } = searchWhere(q)
   const rows = await db
     .prepare(
       `${PERSON_SELECT} ${PERSON_FROM} ${where}
@@ -139,10 +166,9 @@ export async function peoplePage(
 
 /** Сколько людей в выборке — теми же условиями, что и сам список. */
 export async function peopleCount(q?: string): Promise<number> {
-  const where = q ? " WHERE p.full_name LIKE ? OR p.phone LIKE ?" : ""
-  const args = q ? [`%${q}%`, `%${q.replace(/[^\d+]/g, "")}%`] : []
+  const { where, args } = searchWhere(q)
   const row = (await db
-    .prepare(`SELECT COUNT(*) AS n FROM care_people p ${where.replace(" WHERE p.", " WHERE p.")}`)
+    .prepare(`SELECT COUNT(*) AS n FROM care_people p ${where}`)
     .get(...args)) as { n: number } | undefined
   return Number(row?.n ?? 0)
 }
