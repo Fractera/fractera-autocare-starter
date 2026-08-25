@@ -66,6 +66,20 @@ export type SyncReport = {
    * экране, а не выяснять по молчащей цепочке через полгода.
    */
   birthdayKnown: number
+  /**
+   * У скольких карточек КЛЮЧ `birth_date` вообще присутствовал в ответе.
+   *
+   * 🔒 ПРИСУТСТВИЕ КЛЮЧА И ЗАПОЛНЕННОСТЬ ЗНАЧЕНИЯ — РАЗНЫЕ ФАКТЫ, И ПЕРВЫЙ
+   * ПРИТВОРЯЕТСЯ ВТОРЫМ. ✗ Оплачено дважды: сперва `clients/search` не присылал
+   * ключ вовсе, и «ни у кого нет дня рождения» было неотличимо от «мы не
+   * спрашивали». Теперь оптовый маршрут ключ присылает — и он пуст у всех 1849.
+   * Это измеренный факт: клиника дни рождения не ведёт, и тип триггера
+   * `birthday` не имеет источника данных. Экран аудита обязан говорить это
+   * словами, а не повторять «не измерено».
+   */
+  birthdayFieldSeen: number
+  /** У скольких карточек присутствовал ключ `sms_not`. */
+  consentFieldSeen: number
 }
 
 /** Сколько строк класть в один запрос. Ограничение — число параметров на запрос. */
@@ -136,6 +150,8 @@ export async function syncFromCrm(): Promise<SyncReport> {
     mergedByPhone: 0,
     consentKnown: 0,
     birthdayKnown: 0,
+    birthdayFieldSeen: 0,
+    consentFieldSeen: 0,
   }
 
   /** Телефоны, уже занятые в ЭТОМ прогоне: по ним и ловится схлопывание. */
@@ -177,9 +193,11 @@ export async function syncFromCrm(): Promise<SyncReport> {
     else { report.peopleInserted++; idByPhone.set(phone, personId) }
     personByCrmId.set(c.id, personId)
 
-    // Считается ПРИСУТСТВИЕ поля, а не его значение: пришедший ноль — это
-    // измеренное «слать можно», а не пришедшее поле — отсутствие измерения.
+    // Присутствие ключа и заполненность значения считаются ОТДЕЛЬНО: без этого
+    // «ни у кого нет дня рождения» неотличимо от «мы не спрашивали».
+    if ("sms_not" in c) report.consentFieldSeen++
     if (c.sms_not !== undefined && c.sms_not !== null) report.consentKnown++
+    if ("birth_date" in c) report.birthdayFieldSeen++
     if (c.birth_date) report.birthdayKnown++
 
     const fullName = [c.surname, c.name].filter(Boolean).join(" ").trim() || "Без имени"

@@ -29,12 +29,13 @@ export function BaseAudit({ ui }: { ui: BaseAuditUi }) {
   if (state.kind === "loading") return <BaseAuditSkeleton labels={labels} />
   if (state.kind === "failed") return <EmptyState title={ui.failed} />
 
-  const { base, sync } = state
+  const { base, sync, consent } = state
 
-  // Согласие и день рождения измерены только если CRM прислала поле хоть по
-  // одной карточке. Прогонов не было — считать нечего, и это тоже «не измерено».
-  const consentMeasured = Boolean(sync && sync.consentKnown > 0)
-  const birthdayMeasured = Boolean(sync && sync.birthdayKnown > 0)
+  // 🔒 ТРИ СОСТОЯНИЯ, А НЕ ДВА: не спрашивали · спросили и пусто у всех ·
+  // спросили и есть значения. Среднее — измеренный факт, и называть его «не
+  // измерено» значит терять ровно то, что стоило пятнадцати минут разведки.
+  const birthdayAsked = Boolean(sync && sync.birthdayFieldSeen > 0)
+  const birthdayEmptyEverywhere = birthdayAsked && sync!.birthdayKnown === 0
 
   // Сверка с CRM — арифметика самого отчёта, а не сторонний скрипт.
   const reconcile = sync
@@ -84,17 +85,14 @@ export function BaseAudit({ ui }: { ui: BaseAuditUi }) {
       <section>
         <H4 variant="ui" className="mb-3">{ui.crmTitle}</H4>
         <div className="grid gap-3 sm:grid-cols-2">
-          {consentMeasured ? (
-            <AuditTile value={base.withoutConsent} label={ui.withoutConsent} hint={ui.withoutConsentHint} />
-          ) : (
+          {birthdayEmptyEverywhere ? (
             <AuditTile
-              value={<span className="text-base">{ui.notMeasured}</span>}
-              label={ui.consentUnknown}
-              hint={ui.consentUnknownHint}
+              value={<span className="text-base">{ui.birthdayNoneAtAll}</span>}
+              label={ui.birthdayUnknown}
+              hint={ui.birthdayNoneAtAllHint}
               tone="warn"
             />
-          )}
-          {birthdayMeasured ? (
+          ) : birthdayAsked ? (
             <AuditTile value={base.withoutBirthday} label={ui.withoutBirthday} hint={ui.withoutBirthdayHint} />
           ) : (
             <AuditTile
@@ -105,6 +103,38 @@ export function BaseAudit({ ui }: { ui: BaseAuditUi }) {
             />
           )}
         </div>
+      </section>
+
+      {/* 🔒 СОГЛАСИЕ — СВОЙ РАЗДЕЛ, А НЕ ПЛИТКА В ЧУЖОМ. От него зависит, кому
+          продукт вправе написать; это единственное число на экране, у которого
+          цена ошибки не «неточный отчёт», а письмо человеку, который отказался. */}
+      <section>
+        <H4 variant="ui" className="mb-3">{ui.consentTitle}</H4>
+        {!consent ? (
+          <EmptyState title={ui.noConsentRun} hint={ui.noConsentRunHint} />
+        ) : (
+          <>
+            <p className="mb-3 text-xs text-muted-foreground">
+              {ui.syncAt}: <span className="tabular-nums text-foreground">{when(consent.at)}</span>
+              {" · "}
+              {ui.syncBy}: <span className="text-foreground">{consent.actor}</span>
+              {consent.unreadable > 0 && (
+                <> {" · "}{ui.consentUnreadable.replace("{n}", String(consent.unreadable))}</>
+              )}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <AuditTile
+                value={consent.refused}
+                label={ui.consentRefused}
+                hint={ui.consentRefusedHint}
+                tone={consent.refused > 0 ? "warn" : "plain"}
+              />
+              <AuditTile value={consent.noRecord} label={ui.consentNoRecord} hint={ui.consentNoRecordHint} />
+              <AuditTile value={consent.allowed} label={ui.consentAllowed} hint={ui.consentAllowedHint} />
+            </div>
+            <p className="mt-3 text-[11px] text-muted-foreground">{ui.consentRule}</p>
+          </>
+        )}
       </section>
 
       <section>

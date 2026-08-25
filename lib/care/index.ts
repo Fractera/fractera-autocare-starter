@@ -270,8 +270,12 @@ export type LastSync = {
   mergedByPhone: number
   /** Ноль означает «CRM не отдала поле», а не «все согласны». */
   consentKnown: number
-  /** Ноль означает «CRM не отдала поле», а не «ни у кого нет дня рождения». */
+  /** Сколько карточек принесли ЗАПОЛНЕННУЮ дату рождения. */
   birthdayKnown: number
+  /** У скольких карточек ключ `birth_date` вообще был. Отличает «пусто» от «не спрашивали». */
+  birthdayFieldSeen: number
+  /** У скольких карточек был ключ `sms_not`. */
+  consentFieldSeen: number
 }
 
 export async function lastSyncRun(): Promise<LastSync | null> {
@@ -296,10 +300,55 @@ export async function lastSyncRun(): Promise<LastSync | null> {
       mergedByPhone: Number(m.mergedByPhone) || 0,
       consentKnown: Number(m.consentKnown) || 0,
       birthdayKnown: Number(m.birthdayKnown) || 0,
+      birthdayFieldSeen: Number(m.birthdayFieldSeen) || 0,
+      consentFieldSeen: Number(m.consentFieldSeen) || 0,
     }
   } catch {
     // Испорченный JSON в журнале — не повод ронять экран: прогон был, а
     // подробности потеряны, и честнее сказать это, чем показать нули как факт.
+    return null
+  }
+}
+
+/** Что записал последний проход за согласием. `null` — проходов ещё не было. */
+export type LastConsent = {
+  at: string
+  actor: string
+  checked: number
+  unreadable: number
+  withAgreement: number
+  refused: number
+  allowed: number
+  noRecord: number
+  changed: number
+  seconds: number
+}
+
+export async function lastConsentRun(): Promise<LastConsent | null> {
+  const row = (await db
+    .prepare(
+      `SELECT created_at, actor, metadata FROM care_activity_log
+        WHERE action = 'crm_consent' ORDER BY created_at DESC LIMIT 1`,
+    )
+    .get()) as { created_at: string; actor: string; metadata: string } | undefined
+  if (!row) return null
+
+  try {
+    const m = JSON.parse(row.metadata ?? "{}")
+    const n = (k: string) => Number(m[k]) || 0
+    return {
+      at: row.created_at,
+      actor: row.actor,
+      checked: n("checked"),
+      unreadable: n("unreadable"),
+      withAgreement: n("withAgreement"),
+      refused: n("refused"),
+      allowed: n("allowed"),
+      noRecord: n("noRecord"),
+      changed: n("changed"),
+      seconds: n("seconds"),
+    }
+  } catch {
     return null
   }
 }

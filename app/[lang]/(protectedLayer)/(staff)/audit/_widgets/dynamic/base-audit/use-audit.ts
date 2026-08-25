@@ -30,16 +30,30 @@ export type AuditSync = {
   visitRows: number
   skippedNoPhone: number
   mergedByPhone: number
-  /** Ноль означает «CRM не отдала поле», а не «все согласны». */
   consentKnown: number
-  /** Ноль означает «CRM не отдала поле». */
   birthdayKnown: number
+  /** У скольких карточек ключ был. Отличает «пусто у всех» от «не спрашивали». */
+  birthdayFieldSeen: number
+  consentFieldSeen: number
+}
+
+export type AuditConsent = {
+  at: string
+  actor: string
+  checked: number
+  unreadable: number
+  withAgreement: number
+  refused: number
+  allowed: number
+  noRecord: number
+  changed: number
+  seconds: number
 }
 
 type State =
   | { kind: "loading" }
   | { kind: "failed" }
-  | { kind: "ready"; base: AuditBase; sync: AuditSync | null }
+  | { kind: "ready"; base: AuditBase; sync: AuditSync | null; consent: AuditConsent | null }
 
 export function useAudit(ui: BaseAuditUi) {
   const [state, setState] = useState<State>({ kind: "loading" })
@@ -60,7 +74,12 @@ export function useAudit(ui: BaseAuditUi) {
         return
       }
       const data = await res.json()
-      setState({ kind: "ready", base: data.base as AuditBase, sync: (data.sync ?? null) as AuditSync | null })
+      setState({
+        kind: "ready",
+        base: data.base as AuditBase,
+        sync: (data.sync ?? null) as AuditSync | null,
+        consent: (data.consent ?? null) as AuditConsent | null,
+      })
     } catch {
       toast.error(ui.unreachable)
       setState({ kind: "failed" })

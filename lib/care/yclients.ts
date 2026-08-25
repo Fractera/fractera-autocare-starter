@@ -83,6 +83,24 @@ export type YclientsClient = {
   is_new?: boolean
 }
 
+/**
+ * Карточка клиента целиком. Здесь перечислено только то, что мы читаем.
+ *
+ * 🔒 `client_agreements` — НАСТОЯЩЕЕ СОГЛАСИЕ, и его форма не булева. Поля
+ * бывают `true`, `false` и `null`, и `null` — это «не спрашивали», а не «нет».
+ */
+export type YclientsCard = {
+  id: number
+  sms_not?: number
+  birth_date?: string
+  client_agreements?: {
+    is_newsletter_allowed?: boolean | null
+    is_personal_data_processing_allowed?: boolean | null
+    is_yc_newsletter_allowed?: boolean | null
+    is_yc_personal_data_processing_allowed?: boolean | null
+  } | null
+}
+
 export type YclientsRecord = {
   id: number
   date?: string
@@ -92,7 +110,20 @@ export type YclientsRecord = {
   services?: { title?: string; cost?: number }[]
 }
 
-/** Все клиенты филиала. Страница — 200, как в исходнике. */
+/**
+ * Все клиенты филиала — ОПТОВЫМ маршрутом, 25 полей на запись.
+ *
+ * 🔒 ЭТОТ МАРШРУТ, А НЕ `clients/search`. ✗ Оплачено 2026-08-25: `clients/search`
+ * МОЛЧА ИГНОРИРУЕТ список `fields` и всегда отдаёт пять полей —
+ * `id, name, surname, phone, email`. Просишь `sms_not` — приходит `{id}`; просишь
+ * `birth_date` — приходит `{id}`. Ни ошибки, ни предупреждения. Из-за этого шаг 11
+ * полагал согласие известным, а оно не приходило вовсе.
+ *
+ * ✗ ЛОВУШКА РАЗМЕРА: `count=1000` возвращает ДВАДЦАТЬ записей, а не тысячу и не
+ * ошибку. Больше попросил — меньше получил, молча. Рабочий предел — 200.
+ *
+ * Цена полного обхода филиала: 1849 записей за 7.5 секунды.
+ */
 export async function fetchAllClients(
   onPage?: (loaded: number, total: number) => void,
 ): Promise<YclientsClient[]> {
@@ -101,23 +132,51 @@ export async function fetchAllClients(
   let page = 1
   for (;;) {
     const r = await call<{ data: YclientsClient[]; meta?: { total_count?: number } }>(
-      `/api/v1/company/${salon}/clients/search`,
-      {
-        method: "POST",
-        body: {
-          page,
-          page_size: 200,
-          fields: ["id", "name", "surname", "phone", "email", "birth_date", "sms_not"],
-        },
-      },
+      `/api/v1/clients/${salon}?count=200&page=${page}`,
     )
-    out.push(...r.data)
+    const rows = r.data ?? []
+    out.push(...rows)
     onPage?.(out.length, r.meta?.total_count ?? 0)
-    if (r.data.length < 200) break
+    if (rows.length < 200) break
     page += 1
     await sleep(PAUSE_MS)
   }
   return out
+}
+
+/**
+ * Карточка ОДНОГО клиента: 26 полей, и среди них `client_agreements`.
+ *
+ * 🔒 СОГЛАСИЕ ЖИВЁТ ТОЛЬКО ЗДЕСЬ. В оптовом маршруте этого поля нет, а старые
+ * флаги (`sms_not`, `sms_check`, `sms_bot`) в этом учреждении мертвы — у всех
+ * 1849 стоит ноль, то есть ими никогда не пользовались. Ноль в них означает
+ * «никто не трогал», а не «человек разрешил».
+ *
+ * 🔒 ПОЭТОМУ ОБХОД ЗА СОГЛАСИЕМ ДОРОГОЙ: карточка на клиента, 1849 запросов,
+ * около 15 минут. Он и вынесен в отдельную дверь — решение владельца 2026-08-25.
+ */
+export async function fetchClientCard(clientId: number | string): Promise<YclientsCard | null> {
+  try {
+    const r = await call<{ data: YclientsCard }>(`/api/v1/client/${salonId()}/${clientId}`)
+    return r.data ?? null
+  } catch {
+    // Одна недоступная карточка не должна валить обход из тысячи восьмисот:
+    // пропуск считается вызывающим и попадает в отчёт.
+    return null
+  }
+}
+
+/**
+ * Сколько клиентов у филиала по мнению самой CRM.
+ *
+ * Нужен для сверки: число людей в нашей базе обязано сходиться с этим числом
+ * за вычетом пропущенных без телефона и схлопнутых по телефону.
+ */
+export async function fetchClientsTotal(): Promise<number> {
+  const r = await call<{ meta?: { total_count?: number } }>(
+    `/api/v1/clients/${salonId()}?count=1&page=1`,
+  )
+  return Number(r.meta?.total_count ?? 0)
 }
 
 /**

@@ -36,10 +36,24 @@ export type BaseAuditUi = {
   consentUnknownHint: string
   birthdayUnknown: string
   birthdayUnknownHint: string
+  birthdayNoneAtAll: string
+  birthdayNoneAtAllHint: string
   withoutConsent: string
   withoutConsentHint: string
   withoutBirthday: string
   withoutBirthdayHint: string
+
+  consentTitle: string
+  noConsentRun: string
+  noConsentRunHint: string
+  consentRefused: string
+  consentRefusedHint: string
+  consentNoRecord: string
+  consentNoRecordHint: string
+  consentAllowed: string
+  consentAllowedHint: string
+  consentRule: string
+  consentUnreadable: string
 
   syncTitle: string
   noSync: string
@@ -88,10 +102,28 @@ const RU: BaseAuditUi = {
   birthdayUnknown: "Дата рождения",
   birthdayUnknownHint:
     "CRM не прислала поле ни по одной карточке. Цепочка «поздравление с днём рождения» не сможет сработать ни разу.",
+  birthdayNoneAtAll: "ни у кого",
+  birthdayNoneAtAllHint:
+    "Поле спрошено у всех карточек и пусто у всех: клиника дни рождения не ведёт. Это измеренный факт, а не пробел выгрузки. Цепочка «поздравление с днём рождения» источника данных не имеет — пока в CRM не начнут записывать дату, она не сработает ни разу.",
   withoutConsent: "Отказались от сообщений",
   withoutConsentHint: "Этих людей рассылки не касаются.",
   withoutBirthday: "Без даты рождения",
   withoutBirthdayHint: "Поздравить не с чем.",
+
+  consentTitle: "Согласие на связь",
+  noConsentRun: "За согласием ещё не ходили",
+  noConsentRunHint:
+    "Настоящее согласие лежит только в карточке одного клиента, и обход стоит около пятнадцати минут. Пока он не сделан, база не знает, кто отказался.",
+  consentRefused: "Отказались от рассылки",
+  consentRefusedHint:
+    "Письменный отказ в CRM. Этим людям продукт не пишет — метка «не писать» стоит у них в списке людей.",
+  consentNoRecord: "Записи согласия нет",
+  consentNoRecordHint:
+    "CRM не хранит по ним ни разрешения, ни отказа. По решению владельца считаются разрешением, то есть продукт им пишет.",
+  consentAllowed: "Разрешили прямо",
+  consentAllowedHint: "В карточке стоит явное разрешение на рассылку.",
+  consentRule: "Правило: отсутствие записи = разрешение (решение владельца 2026-08-25).",
+  consentUnreadable: "не прочитано карточек: {n}",
 
   syncTitle: "Последний перенос из CRM",
   noSync: "Переносов ещё не было",
