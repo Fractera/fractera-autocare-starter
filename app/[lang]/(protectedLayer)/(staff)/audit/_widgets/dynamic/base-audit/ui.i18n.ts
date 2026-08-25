@@ -54,6 +54,8 @@ export type BaseAuditUi = {
   consentAllowedHint: string
   consentRule: string
   consentUnreadable: string
+  consentUnreadableLabel: string
+  consentUnreadableHint: string
 
   syncTitle: string
   noSync: string
@@ -124,6 +126,9 @@ const RU: BaseAuditUi = {
   consentAllowedHint: "В карточке стоит явное разрешение на рассылку.",
   consentRule: "Правило: отсутствие записи = разрешение (решение владельца 2026-08-25).",
   consentUnreadable: "не прочитано карточек: {n}",
+  consentUnreadableLabel: "Карточек не прочитано",
+  consentUnreadableHint:
+    "CRM не отдала карточку — обычно из-за ограничения на частоту запросов. Про этих людей согласие НЕ измерено: они остались с тем значением, что стояло раньше. Пока число не ноль, база не знает про них правды — повторите проход.",
 
   syncTitle: "Последний перенос из CRM",
   noSync: "Переносов ещё не было",

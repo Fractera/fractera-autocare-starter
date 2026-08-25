@@ -118,9 +118,6 @@ export function BaseAudit({ ui }: { ui: BaseAuditUi }) {
               {ui.syncAt}: <span className="tabular-nums text-foreground">{when(consent.at)}</span>
               {" · "}
               {ui.syncBy}: <span className="text-foreground">{consent.actor}</span>
-              {consent.unreadable > 0 && (
-                <> {" · "}{ui.consentUnreadable.replace("{n}", String(consent.unreadable))}</>
-              )}
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <AuditTile
@@ -131,6 +128,19 @@ export function BaseAudit({ ui }: { ui: BaseAuditUi }) {
               />
               <AuditTile value={consent.noRecord} label={ui.consentNoRecord} hint={ui.consentNoRecordHint} />
               <AuditTile value={consent.allowed} label={ui.consentAllowed} hint={ui.consentAllowedHint} />
+              {/* 🔒 НЕПРОЧИТАННЫЕ — ПЛИТКА, А НЕ ПОДПИСЬ МЕЛКИМ. ✗ Оплачено
+                  2026-08-25: первый проход не прочитал 491 карточку из 1844 —
+                  27% базы, — и эти люди остались с прежним «писать можно», хотя
+                  про них не измерено ничего. Число такого размера не имеет права
+                  стоять в сноске. */}
+              {consent.unreadable > 0 && (
+                <AuditTile
+                  value={consent.unreadable}
+                  label={ui.consentUnreadableLabel}
+                  hint={ui.consentUnreadableHint}
+                  tone="warn"
+                />
+              )}
             </div>
             <p className="mt-3 text-[11px] text-muted-foreground">{ui.consentRule}</p>
           </>
