@@ -189,3 +189,117 @@ export async function visitsOf(personId: string): Promise<CareVisit[]> {
     .all(personId)
   return rows as unknown as CareVisit[]
 }
+
+/**
+ * Числа аудита: можно ли доверять базе, по которой принимают решения.
+ *
+ * 🔒 ЭКРАН АУДИТА СУЩЕСТВУЕТ, ПОТОМУ ЧТО ДАННЫЕ ПРИШЛИ ИЗ ЧУЖОЙ СИСТЕМЫ. Часть
+ * строк CRM неполна не по нашей вине и не по вине клиники: администратор не
+ * записал телефон, приём не привязали к карточке. Пока эти числа не названы,
+ * любой отчёт продукта выглядит точным — а он посчитан по базе, треть которой
+ * может быть дырявой.
+ *
+ * 🔒 СЧИТАЕТСЯ ПО ФАКТУ, А НЕ ХРАНИТСЯ. Хранимый счётчик расходится с
+ * действительностью в тот день, когда кто-то поправит строку руками.
+ */
+export type CareAudit = {
+  /** Всего людей в базе. */
+  people: number
+  /** Всего строк визитов (строка = одна услуга). */
+  visitRows: number
+  /** Различных записей CRM среди визитов. */
+  crmRecords: number
+  /**
+   * Визиты, не привязанные ни к одному человеку.
+   *
+   * 🔒 ГЛАВНОЕ ЧИСЛО ЭТОГО ЭКРАНА. Это приёмы, за которыми не стоит карточка:
+   * деньги посчитаны, а позвать человека снова невозможно — некому. Клиника
+   * имеет право знать масштаб, а не узнавать его из расхождения отчётов.
+   */
+  visitsWithoutPerson: number
+  /** Люди, которым нельзя писать: согласие снято. */
+  withoutConsent: number
+  /** Люди, за которыми нет ни одного визита в окне выгрузки. */
+  neverVisited: number
+  /** Строки визитов без названия услуги — приём есть, что делали, не записано. */
+  visitsWithoutService: number
+  /** Люди без даты рождения: поздравление им отправить не с чем. */
+  withoutBirthday: number
+}
+
+export async function careAudit(): Promise<CareAudit> {
+  // Один запрос на все числа, а не восемь: восемь дали бы восемь моментов
+  // времени, и сумма частей могла бы не сойтись с целым прямо на экране.
+  const row = (await db
+    .prepare(
+      `SELECT
+         (SELECT COUNT(*) FROM care_people)                                        AS people,
+         (SELECT COUNT(*) FROM care_visits)                                        AS visitRows,
+         (SELECT COUNT(DISTINCT yclients_record_id) FROM care_visits)              AS crmRecords,
+         (SELECT COUNT(*) FROM care_visits WHERE person_id IS NULL)                AS visitsWithoutPerson,
+         (SELECT COUNT(*) FROM care_people WHERE consent_to_contact = 0)           AS withoutConsent,
+         (SELECT COUNT(*) FROM care_people p
+            WHERE NOT EXISTS (SELECT 1 FROM care_visits v WHERE v.person_id = p.id)) AS neverVisited,
+         (SELECT COUNT(*) FROM care_visits WHERE COALESCE(service_title,'') = '')  AS visitsWithoutService,
+         (SELECT COUNT(*) FROM care_people WHERE birth_date IS NULL OR birth_date = '') AS withoutBirthday`,
+    )
+    .get()) as Record<string, number> | undefined
+
+  const n = (k: string) => Number(row?.[k] ?? 0)
+  return {
+    people: n("people"),
+    visitRows: n("visitRows"),
+    crmRecords: n("crmRecords"),
+    visitsWithoutPerson: n("visitsWithoutPerson"),
+    withoutConsent: n("withoutConsent"),
+    neverVisited: n("neverVisited"),
+    visitsWithoutService: n("visitsWithoutService"),
+    withoutBirthday: n("withoutBirthday"),
+  }
+}
+
+/** Что записал последний прогон синхронизации. `null` — прогонов ещё не было. */
+export type LastSync = {
+  at: string
+  actor: string
+  clients: number
+  peopleInserted: number
+  peopleUpdated: number
+  visitRows: number
+  skippedNoPhone: number
+  mergedByPhone: number
+  /** Ноль означает «CRM не отдала поле», а не «все согласны». */
+  consentKnown: number
+  /** Ноль означает «CRM не отдала поле», а не «ни у кого нет дня рождения». */
+  birthdayKnown: number
+}
+
+export async function lastSyncRun(): Promise<LastSync | null> {
+  const row = (await db
+    .prepare(
+      `SELECT created_at, actor, metadata FROM care_activity_log
+        WHERE action = 'crm_sync' ORDER BY created_at DESC LIMIT 1`,
+    )
+    .get()) as { created_at: string; actor: string; metadata: string } | undefined
+  if (!row) return null
+
+  try {
+    const m = JSON.parse(row.metadata ?? "{}")
+    return {
+      at: row.created_at,
+      actor: row.actor,
+      clients: Number(m.clients) || 0,
+      peopleInserted: Number(m.peopleInserted) || 0,
+      peopleUpdated: Number(m.peopleUpdated) || 0,
+      visitRows: Number(m.visitRows) || 0,
+      skippedNoPhone: Number(m.skippedNoPhone) || 0,
+      mergedByPhone: Number(m.mergedByPhone) || 0,
+      consentKnown: Number(m.consentKnown) || 0,
+      birthdayKnown: Number(m.birthdayKnown) || 0,
+    }
+  } catch {
+    // Испорченный JSON в журнале — не повод ронять экран: прогон был, а
+    // подробности потеряны, и честнее сказать это, чем показать нули как факт.
+    return null
+  }
+}

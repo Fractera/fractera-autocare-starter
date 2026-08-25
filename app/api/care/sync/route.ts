@@ -1,8 +1,9 @@
 // @api pull clients and visits from the CRM into product tables
 import { NextRequest, NextResponse } from "next/server"
 import { requireRoles } from "@/lib/auth/require-roles"
+import { getSession } from "@/lib/auth/get-session"
 import { PROTECTED_GROUP_ROLES } from "@/lib/roles"
-import { syncFromCrm } from "@/lib/care/sync"
+import { syncFromCrm, logSyncRun } from "@/lib/care/sync"
 import { fetchCompany } from "@/lib/care/yclients"
 
 // СИНХРОНИЗАЦИЯ С CRM — единственная дверь, за которой данные филиала попадают
@@ -36,11 +37,20 @@ export async function GET(req: NextRequest) {
     const company = await fetchCompany()
     const started = Date.now()
     const report = await syncFromCrm()
+
+    // Прогон записывается в журнал: часть чисел отчёта — свойства ПРОГОНА, и в
+    // таблицах их нет по определению. Экран аудита читает их отсюда.
+    const who = (await getSession(req))?.userId ?? "unknown"
+    const logFailed = await logSyncRun(who, report)
+
     return NextResponse.json({
       ok: true,
       company: { id: company.id, title: company.title, city: company.city },
       seconds: Math.round((Date.now() - started) / 1000),
       ...report,
+      // Неудачная запись журнала названа вслух, а не проглочена: данные
+      // перенесены, но аудит об этом прогоне не узнает.
+      ...(logFailed ? { logFailed } : {}),
     })
   } catch (e) {
     // 🔒 ПРИЧИНА НАЗЫВАЕТСЯ. Молчаливый отказ здесь неотличим от «в филиале нет

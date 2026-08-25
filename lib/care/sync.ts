@@ -46,6 +46,26 @@ export type SyncReport = {
    * приёмку без этого счётчика можно только сторонним скриптом.
    */
   mergedByPhone: number
+  /**
+   * У скольких карточек CRM ПРИШЛО поле согласия (`sms_not`).
+   *
+   * 🔒 НОЛЬ ЗДЕСЬ ОЗНАЧАЕТ «НЕ ИЗМЕРЕНО», А НЕ «ВСЕ СОГЛАСНЫ» — И РАЗНИЦА
+   * СТОИТ ДОРОГО. ✗ Найдено 2026-08-25: YCLIENTS на наш список `fields`
+   * возвращает только `id, name, surname, phone, email`, молча выбрасывая
+   * `sms_not`. Согласие вычисляется как `sms_not ? 0 : 1`, поэтому у КАЖДОГО
+   * выходит единица, и экран аудита показал бы «отказников 0» как измеренный
+   * факт. Продукт существует, чтобы писать людям: он написал бы и тем, кто
+   * отказался.
+   */
+  consentKnown: number
+  /**
+   * У скольких карточек CRM пришла дата рождения.
+   *
+   * 🔒 ТОТ ЖЕ ОТКАЗ, ЧТО У СОГЛАСИЯ. Ноль означает, что тип триггера `birthday`
+   * из `care_scenarios` не сможет сработать ни разу — и это надо видеть на
+   * экране, а не выяснять по молчащей цепочке через полгода.
+   */
+  birthdayKnown: number
 }
 
 /** Сколько строк класть в один запрос. Ограничение — число параметров на запрос. */
@@ -114,6 +134,8 @@ export async function syncFromCrm(): Promise<SyncReport> {
     services: 0,
     skippedNoPhone: 0,
     mergedByPhone: 0,
+    consentKnown: 0,
+    birthdayKnown: 0,
   }
 
   /** Телефоны, уже занятые в ЭТОМ прогоне: по ним и ловится схлопывание. */
@@ -154,6 +176,11 @@ export async function syncFromCrm(): Promise<SyncReport> {
     if (known) report.peopleUpdated++
     else { report.peopleInserted++; idByPhone.set(phone, personId) }
     personByCrmId.set(c.id, personId)
+
+    // Считается ПРИСУТСТВИЕ поля, а не его значение: пришедший ноль — это
+    // измеренное «слать можно», а не пришедшее поле — отсутствие измерения.
+    if (c.sms_not !== undefined && c.sms_not !== null) report.consentKnown++
+    if (c.birth_date) report.birthdayKnown++
 
     const fullName = [c.surname, c.name].filter(Boolean).join(" ").trim() || "Без имени"
     // `sms_not` в CRM означает «не слать» — наше поле обратно по смыслу.
@@ -270,4 +297,35 @@ export async function syncFromCrm(): Promise<SyncReport> {
   report.services = Number(after.n) - Number(before.n)
 
   return report
+}
+
+/**
+ * Записать прогон в журнал.
+ *
+ * 🔒 БЕЗ ЭТОЙ ЗАПИСИ ЭКРАН АУДИТА НЕВОЗМОЖЕН. Часть чисел — свойства ПРОГОНА, а
+ * не базы: сколько карточек CRM пропущено без телефона и сколько схлопнулось по
+ * телефону. В таблицах этих людей нет по определению, и вычислить их задним
+ * числом нельзя — можно только помнить. ✗ Без журнала расхождение «CRM отдаёт
+ * 1849, у нас 1844» пришлось бы каждый раз выяснять сторонним скриптом, как это
+ * и было 2026-08-25.
+ *
+ * 🔒 ЖУРНАЛ, А НЕ НОВАЯ ТАБЛИЦА. `care_activity_log` заведён шагом 10 ровно под
+ * «кто и что сделал»; прогон синхронизации — такое же действие, как правка
+ * карточки, и заводить ему отдельный склад значило бы делить один журнал надвое.
+ *
+ * 🔒 ОШИБКА ЗАПИСИ НЕ ВАЛИТ ПРОГОН. Данные уже перенесены; потерять их из-за
+ * неудачной строки журнала было бы дороже, чем потерять саму строку. Отказ
+ * возвращается вызывающему, чтобы он мог сказать о нём вслух.
+ */
+export async function logSyncRun(actor: string, report: SyncReport): Promise<string | null> {
+  try {
+    await db
+      .prepare(
+        `INSERT INTO care_activity_log (id, actor, action, metadata) VALUES (?,?,?,?)`,
+      )
+      .run(`al-${idTail()}`, actor, "crm_sync", JSON.stringify(report))
+    return null
+  } catch (e) {
+    return String((e as Error).message ?? e)
+  }
 }
