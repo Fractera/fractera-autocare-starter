@@ -6,11 +6,21 @@
 export type PatientCardUi = {
   title: string
   subtitle: string
+  /** Крошка на список: карточку открывают из него, и дорога назад обязана быть. */
+  parent: string
 }
 
 const DICT: Record<string, PatientCardUi> = {
-  en: { title: "Patient card", subtitle: "Visits, tasks, correspondence and history of one person." },
-  ru: { title: "Карточка пациента", subtitle: "Визиты, задачи, переписка и история одного человека." },
+  en: {
+    title: "Patient card",
+    subtitle: "Visits, tasks, correspondence and history of one person.",
+    parent: "Patients",
+  },
+  ru: {
+    title: "Карточка пациента",
+    subtitle: "Визиты, задачи, переписка и история одного человека.",
+    parent: "Пациенты",
+  },
 }
 
 export function patientCardUi(lang: string): PatientCardUi {
