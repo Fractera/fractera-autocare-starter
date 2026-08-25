@@ -71,6 +71,8 @@ export type StandardContentPageProps = {
    * фабрика, и `title` она получает по-прежнему.
    */
   titleInBody?: boolean
+  /** Выравнивание шапки страницы. Проводится в примитив `PageHeader` как есть. */
+  align?: "start" | "center"
   /** Роль необязательна: в `APP-CONFIG` её нет, и выдумывать её нельзя. */
   author?: { name: string; role?: string; url?: string }
   /**
@@ -115,6 +117,7 @@ export function StandardContentPage({
   title,
   subtitle,
   titleInBody = false,
+  align = "start",
   author = { name: projectAuthor().name, role: projectAuthor().role, url: projectAuthor().url },
   metaItems,
   heroImage,
@@ -206,6 +209,7 @@ export function StandardContentPage({
             subtitle={subtitle}
             metaItems={metaItems}
             author={author}
+            align={align}
           />
         )}
 

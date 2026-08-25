@@ -19,7 +19,6 @@ import { AccountButton } from "@/components/menu/account/account-button.client";
 import { appShellAuthSide } from "@/components/menu/account/account-config";
 import { accountLabels } from "@/components/menu/account/account-menu.i18n";
 import { accountLinks } from "@/lib/menu/account-links";
-import { cartUi } from "@/components/cart/cart.i18n";
 import { appDialogUi } from "@/components/dialog/app-dialog.i18n"
 import { architectureLinkUi } from "@/lib/i18n/architecture-link.i18n";
 import { passportLinkUi } from "@/lib/i18n/passport-link.i18n";
@@ -169,9 +168,7 @@ export function FooterMenu({ lang }: { lang: string }) {
                 side={authSide}
                 labels={accountLabels(lang)}
                 links={accountLinks(lang)}
-                cart={cartUi(lang)}
                 dialogUi={appDialogUi(lang)}
-                currency={cfg.commerce.currency}
               />
             )}
             {bannerOn && <CookieSettingsButton label={cookieButtonUi(lang).settings} />}

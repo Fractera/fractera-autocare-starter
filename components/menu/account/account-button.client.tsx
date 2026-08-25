@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { LogIn } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { AccountDrawer, type DrawerLink } from "@/components/menu/account/account-drawer.client";
-import { CartButton } from "@/components/cart/cart-button.client";
-import type { CartUi } from "@/components/cart/cart.i18n";
 import type { AppDialogUi } from "@/components/dialog/app-dialog.i18n";
 import type { AuthShellSide } from "@/components/menu/account/account-config";
 import type { AccountLabels } from "@/components/menu/account/account-menu.i18n";
@@ -18,15 +16,12 @@ import type { AccountLabels } from "@/components/menu/account/account-menu.i18n"
 // the entry point too. UI standard: shadcn Button/buttonVariants + lucide icons.
 type Me = { userId?: string; email?: string; roles?: string[] } | null;
 
-export function AccountButton({ lang, side, labels, links, cart, currency, dialogUi }: {
+export function AccountButton({ lang, side, labels, links, dialogUi }: {
   lang: string;
   side: AuthShellSide;
   labels: AccountLabels;
   /** Рабочие разделы ящика: состав приходит с сервера, где известны страницы проекта. */
   links?: DrawerLink[];
-  /** Слова корзины и валюта витрины — для значка заказа слева от кнопки аккаунта. */
-  cart?: CartUi;
-  currency?: string;
   /** Слова общего окна — резолвятся на сервере (`appDialogUi(lang)`). */
   dialogUi?: AppDialogUi;
 }) {
@@ -42,11 +37,11 @@ export function AccountButton({ lang, side, labels, links, cart, currency, dialo
   }, []);
 
   if (me && me.userId) {
-    // Корзина — СЛЕВА от кнопки аккаунта и только у вошедшего. Тот же запрос
-    // `/api/me`, что и у ящика: два островка спрашивали бы одно и то же дважды.
+    // 🔒 Сервис корзины удалён из проекта (решение владельца 2026-08-25): продукт
+    // ничего не продаёт, и значок заказа слева от кнопки аккаунта обещал бы
+    // возможность, которой нет.
     return (
       <>
-        {cart && currency && dialogUi && <CartButton lang={lang} currency={currency} labels={cart} dialogUi={dialogUi} />}
         <AccountDrawer lang={lang} side={side} labels={labels} email={me.email} roles={me.roles} links={links} />
       </>
     );

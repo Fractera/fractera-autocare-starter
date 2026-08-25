@@ -74,6 +74,8 @@ export type ContentPageConfig<C extends ContentPageContent> = {
    * `title` из материала.
    */
   titleInBody?: boolean
+  /** Выравнивание шапки страницы: `start` (по умолчанию) или `center`. */
+  align?: "start" | "center"
   /**
    * Optional sections injected into the block, directly ABOVE the FAQ (architect
    * discretion — e.g. the sponsorship section). The factory bakes in nothing
@@ -103,7 +105,7 @@ function abs(path: string): string {
 }
 
 export function createContentPage<C extends ContentPageContent>(config: ContentPageConfig<C>) {
-  const { resolve, chrome, meta, jsonLdType = 'Article', sections, hero, afterHero, titleInBody = false } = config
+  const { resolve, chrome, meta, jsonLdType = 'Article', sections, hero, afterHero, titleInBody = false, align = "start" } = config
 
   async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
     const { lang } = await params
@@ -214,6 +216,7 @@ export function createContentPage<C extends ContentPageContent>(config: ContentP
           title={c.title}
           subtitle={c.subtitle}
           titleInBody={titleInBody}
+          align={align}
           heroImage={meta.heroImage}
           heroAlt={c.title}
           hero={hero?.(lang)}
