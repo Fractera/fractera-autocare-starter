@@ -233,6 +233,204 @@ const SCHEMA = `
     created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
   );
   CREATE INDEX IF NOT EXISTS tgdesk_calendar_due ON tgdesk_calendar (status, due_unix);
+
+  -- ── Автозабота ────────────────────────────────────────────────────────────
+  --
+  -- Сервис заботы о клиентах учреждения: события по таймеру при условиях и
+  -- сообщения в мессенджеры. Перенос прототипа «carecrm» (шаг 10, 2026-08-25).
+  --
+  -- 🔒 ПРЕФИКС "care_", А НЕ "<id>_" (решение владельца 2026-08-25). Закон
+  -- продуктов велит называть таблицы по вечному «id» из досье, но владелец
+  -- решил досье не заводить и работать классически — вешать имена не на что.
+  -- Отступление названо вслух и живёт ровно до регистрации продукта в панели;
+  -- зарегистрировал — таблицы переименовываются шагом, а не молча. Тот же
+  -- случай и то же решение, что у образца Telegram Desk выше.
+  --
+  -- 🔒 «clinic_id» НЕ ПЕРЕЕХАЛ. В исходнике он стоял в каждой из 14 таблиц:
+  -- тот продукт задумывался многоклиничным. Решение владельца 2026-08-24 —
+  -- «одно приложение — всегда одно учреждение», а колонка, всегда равная
+  -- одному значению, это колонка, которая врёт.
+
+  -- 🔒 ЧЕЛОВЕК И ЕГО ДЕЛО — ДВЕ ТАБЛИЦЫ, И РАЗДЕЛЕНЫ ОНИ В ДЕНЬ СОЗДАНИЯ.
+  --
+  -- «care_people» не покидает сервер НИКОГДА. Наружу — в модель, в шлюз
+  -- отправки — уходит обезличенный «person_id» и минимум из «care_cases»;
+  -- соединение обратно происходит здесь, на своей машине.
+  --
+  -- ✗ Приём, который этим отменяется: исходник отправлял ИМЯ пациента в
+  -- OpenAI («lib/ai.js»), гордясь тем, что не шлёт телефон и комментарии.
+  -- Имя — такие же персональные данные, как телефон.
+  --
+  -- 🔒 Владелец решил расщепить СРАЗУ (2026-08-25), сузив своё же решение
+  -- «работу с регулятором в текущей версии не оптимизируем»: структура
+  -- закладывается правильной сегодня, чтобы не переделывать её потом.
+  CREATE TABLE IF NOT EXISTS care_people (
+    id                 TEXT PRIMARY KEY NOT NULL,
+    full_name          TEXT NOT NULL,
+    -- Телефон уникален сам по себе: учреждение одно. В исходнике уникальность
+    -- была парой с «clinic_id» — вместе с многоклиничностью ушла и пара.
+    phone              TEXT NOT NULL UNIQUE,
+    email              TEXT,
+    birth_date         TEXT,
+    -- 🔒 СОГЛАСИЕ ЖИВЁТ ЗДЕСЬ, А НЕ В ДЕЛЕ. Это свойство ЧЕЛОВЕКА, и проверка
+    -- «можно ли ему писать» не должна зависеть от того, заведено ли дело.
+    consent_to_contact INTEGER NOT NULL DEFAULT 1,
+    -- Внутренняя заметка о человеке. Свободный текст, в котором легко окажется
+    -- имя или подробность, — поэтому она в таблице, которая не покидает сервер,
+    -- а не в деле. Наружу не уходит ни при каких условиях.
+    comment            TEXT,
+    created_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    updated_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+
+  -- Дело человека в сервисе: всё, что о нём знает Автозабота, КРОМЕ личности.
+  -- Одна строка на человека. Именно эти поля читают сегменты и видит модель.
+  CREATE TABLE IF NOT EXISTS care_cases (
+    person_id            TEXT PRIMARY KEY NOT NULL REFERENCES care_people(id),
+    -- Идентификатор в CRM. Уникален: два дела на одного клиента YCLIENTS —
+    -- это два человека в базе, то есть дефект синхронизации.
+    yclients_client_id   TEXT UNIQUE,
+    service_direction    TEXT,
+    doctor_name          TEXT,
+    last_service         TEXT,
+    -- ⚠️ Датам визитов из этих колонок ВЕРИТЬ НЕЛЬЗЯ как единственному
+    -- источнику: в исходнике они заполнены у меньшинства карточек, и автор кода
+    -- сам это записал. Считать давность и ритм — из «care_visits».
+    last_visit_date      TEXT,
+    next_visit_date      TEXT,
+    visits_success_count INTEGER,
+    visits_fail_count    INTEGER,
+    is_new_client        INTEGER,
+    lifetime_spent       REAL,
+    created_at           TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    updated_at           TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+
+  -- Правила цепочек: кого, когда и по какому поводу касаться. ЯДРО ПРОДУКТА.
+  CREATE TABLE IF NOT EXISTS care_scenarios (
+    id                TEXT PRIMARY KEY NOT NULL,
+    title             TEXT NOT NULL,
+    description       TEXT,
+    -- no_visit_for_days | upcoming_visit | after_visit | birthday |
+    -- unfinished_treatment | manual_segment
+    trigger_type      TEXT NOT NULL,
+    days_offset       INTEGER NOT NULL DEFAULT 0,
+    service_direction TEXT,
+    message_goal      TEXT NOT NULL,
+    is_active         INTEGER NOT NULL DEFAULT 1,
+    created_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+
+  -- Очередь работы: «связаться с этим человеком по этому поводу».
+  CREATE TABLE IF NOT EXISTS care_tasks (
+    id                TEXT PRIMARY KEY NOT NULL,
+    person_id         TEXT NOT NULL REFERENCES care_people(id),
+    scenario_id       TEXT REFERENCES care_scenarios(id),
+    -- Кому поручено. Учётные записи живут в службе «:3001», своей таблицы людей
+    -- здесь нет и заводить её нельзя: вторая копия разошлась бы с первой в тот
+    -- же день, когда кто-то сменит почту.
+    assignee          TEXT,
+    status            TEXT NOT NULL DEFAULT 'new'
+      CHECK (status IN ('new','in_progress','contacted','booked','no_answer','declined','postponed')),
+    due_date          TEXT NOT NULL,
+    generated_message TEXT,
+    final_message     TEXT,
+    result_comment    TEXT,
+    created_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    updated_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+  CREATE INDEX IF NOT EXISTS care_tasks_status ON care_tasks (status, due_date);
+  -- 🔒 ЗАЩИТА ОТ ДУБЛЕЙ СТОИТ В БАЗЕ, А НЕ ТОЛЬКО В КОДЕ (перенесено из
+  -- исходника): не больше одной ОТКРЫТОЙ задачи на пару (человек, сценарий).
+  -- Код проверяет, индекс гарантирует — без него гонка двух генераций даёт
+  -- человеку два одинаковых повода.
+  CREATE UNIQUE INDEX IF NOT EXISTS care_tasks_one_open_per_scenario
+    ON care_tasks (person_id, scenario_id)
+    WHERE status IN ('new','in_progress','postponed') AND scenario_id IS NOT NULL;
+
+  -- Визиты построчно: строка = ОДНА услуга одного визита. Источник всей
+  -- аналитики и всех сегментов.
+  CREATE TABLE IF NOT EXISTS care_visits (
+    id                 TEXT PRIMARY KEY NOT NULL,
+    -- Пусто — законное состояние: визит, не привязанный к карточке. Таких в
+    -- базе исходника заметная доля, и экран «Аудит базы» существует, чтобы
+    -- назвать их число: этих людей невозможно вернуть.
+    person_id          TEXT REFERENCES care_people(id),
+    yclients_record_id TEXT NOT NULL,
+    visit_date         TEXT NOT NULL,
+    attendance         INTEGER,
+    staff_name         TEXT,
+    service_title      TEXT,
+    service_cost       REAL,
+    created_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    -- 🔒 ИДЕМПОТЕНТНОСТЬ СИНХРОНИЗАЦИИ (перенесено из исходника). Повторный
+    -- прогон не должен удваивать историю; ключ естественный — запись CRM плюс
+    -- услуга в ней.
+    UNIQUE (yclients_record_id, service_title)
+  );
+  CREATE INDEX IF NOT EXISTS care_visits_person ON care_visits (person_id);
+  CREATE INDEX IF NOT EXISTS care_visits_date ON care_visits (visit_date);
+
+  -- Переписка с людьми.
+  --
+  -- 🔒 ВЕТКА ПРИВЯЗАНА К ТЕЛЕФОНУ, А НЕ К ЧЕЛОВЕКУ (перенесено из исходника).
+  -- Входящее записывается раньше, чем номер сопоставлен с карточкой, и разговоры
+  -- с незнакомых номеров тоже надо видеть: это живые обращения, которые кто-то
+  -- должен разобрать руками.
+  CREATE TABLE IF NOT EXISTS care_messages (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    person_id           TEXT REFERENCES care_people(id),
+    phone               TEXT NOT NULL,
+    direction           TEXT NOT NULL CHECK (direction IN ('incoming','outgoing')),
+    text                TEXT,
+    channel             TEXT NOT NULL DEFAULT 'whatsapp',
+    -- Идентификатор сообщения у шлюза: по нему ловится повторная доставка того
+    -- же вебхука.
+    chatpush_message_id TEXT,
+    ai_generated        INTEGER NOT NULL DEFAULT 0,
+    status              TEXT NOT NULL DEFAULT 'received'
+      CHECK (status IN ('received','ai_replied','skipped_unknown','error')),
+    created_at          TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS care_messages_gateway_id
+    ON care_messages (chatpush_message_id) WHERE chatpush_message_id IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS care_messages_thread ON care_messages (phone, created_at);
+
+  -- Каталог услуг учреждения и протоколы сопровождения к ним.
+  CREATE TABLE IF NOT EXISTS care_service_protocols (
+    id            TEXT PRIMARY KEY NOT NULL,
+    service_title TEXT NOT NULL UNIQUE,
+    category      TEXT,
+    protocol_text TEXT,
+    -- 🔒 КУРСОВАЯ ПРОЦЕДУРА — СВОЙСТВО УСЛУГИ, А НЕ СТРОКА В SQL.
+    -- ✗ В исходнике курс опознавался условием «service_title ILIKE '%PRP%' OR
+    -- ILIKE '%биоревитал%'» в двух запросах сразу: названия услуг конкретной
+    -- клиники жили в коде. Следующее учреждение сломало бы сегмент молча.
+    is_course     INTEGER NOT NULL DEFAULT 0,
+    excluded      INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+  CREATE INDEX IF NOT EXISTS care_service_protocols_category
+    ON care_service_protocols (category);
+
+  -- Аудит-след действий.
+  --
+  -- 🔒 ПРИ УДАЛЕНИИ ЗАДАЧИ ЗАПИСЬ ОТВЯЗЫВАЕТСЯ, А НЕ СТИРАЕТСЯ (перенесено из
+  -- исходника): след того, что задачу заводили и по ней связывались, обязан
+  -- пережить удаление самой задачи.
+  CREATE TABLE IF NOT EXISTS care_activity_log (
+    id         TEXT PRIMARY KEY NOT NULL,
+    -- Кто сделал: идентификатор учётной записи из службы «:3001».
+    actor      TEXT NOT NULL,
+    person_id  TEXT REFERENCES care_people(id),
+    task_id    TEXT REFERENCES care_tasks(id),
+    action     TEXT NOT NULL,
+    metadata   TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+  CREATE INDEX IF NOT EXISTS care_activity_log_time ON care_activity_log (created_at);
+
 `
 
 // The architecture three streams (projects / pages / endpoints) and their tasks
