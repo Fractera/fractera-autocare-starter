@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import type { AuthShellSide } from "@/components/menu/account/account-config";
 import type { AccountLabels } from "@/components/menu/account/account-menu.i18n";
 import { AccountDropdown } from "@/components/menu/account/account-dropdown.client";
@@ -176,20 +176,37 @@ export function AccountDrawer({ lang, side, labels, email, roles, links }: {
           {/* Bottom — fixed: identity row on top, sign out below; both left-aligned. */}
           <div className="mt-auto border-t border-border p-3 flex flex-col gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
-                    <Info className="size-4" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {roleList.length ? (
-                      <ul className="flex flex-col gap-0.5">
-                        {roleList.map((r) => <li key={r}>{r}</li>)}
-                      </ul>
-                    ) : "—"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {/* 🔒 СПИСОК РОЛЕЙ ОТКРЫВАЕТСЯ ПО НАЖАТИЮ, А НЕ САМ (Рома, 2026-08-25).
+                  Здесь стоял `Tooltip`, и он всплывал КАЖДЫЙ РАЗ при открытии ящика:
+                  подсказка Radix показывается не только по наведению, но и по ФОКУСУ, а
+                  фокус при открытии ящика приходит на первый фокусируемый элемент — на
+                  этот значок. Получалось сообщение, которого никто не спрашивал, и
+                  спрятать его можно было только увести мышь.
+
+                  `Popover` вместо `Tooltip` — не косметика, а смена обещания: подсказка
+                  обязана появляться сама и потому не должна нести ничего, что человек
+                  ИЩЕТ; список ролей ищут. Всплывающее по наведению нельзя ни прочитать не
+                  торопясь, ни открыть пальцем — на телефоне наведения нет вовсе, и роли
+                  там были недоступны в принципе. */}
+              <Popover>
+                {/* Имя кнопки — САМИ РОЛИ, а не подпись «показать роли». Новый ключ
+                    словаря стоил бы правки 82 языковых строк ради слова, которое ничего не
+                    добавляет: экранный диктор и так прочитает «manager, architect», то есть
+                    ровно то, что человек с мышью увидит, нажав. */}
+                <PopoverTrigger
+                  aria-label={roleList.length ? roleList.join(", ") : "—"}
+                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Info className="size-4" />
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-auto min-w-32 p-2 text-sm">
+                  {roleList.length ? (
+                    <ul className="flex flex-col gap-0.5">
+                      {roleList.map((r) => <li key={r}>{r}</li>)}
+                    </ul>
+                  ) : "—"}
+                </PopoverContent>
+              </Popover>
               <span className="text-sm text-foreground truncate">{email}</span>
             </div>
             <Separator />

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireRoles } from "@/lib/auth/require-roles"
 import { PROTECTED_GROUP_ROLES } from "@/lib/roles"
 import { db } from "@/lib/db"
+import { listRequests, openRequestCount } from "@/lib/care/client-requests"
 
 // КАНДИДАТЫ В VIP — самые ценные люди учреждения.
 //
@@ -53,9 +54,17 @@ export async function GET(req: NextRequest) {
       )
       .get()) as { withEmail: number; total: number } | undefined
 
+    // 🔒 ЗАЯВКИ ЕДУТ ТОЙ ЖЕ ДВЕРЬЮ, ЧТО И КАНДИДАТЫ, И ЭТО НЕ ЭКОНОМИЯ ЗАПРОСА. Экран
+    // отвечает на ОДИН вопрос — «кому давать роль клиента», — и у него две стороны:
+    // кандидаты, которых выбрали мы по выручке, и люди, попросившие сами. Развести их по
+    // двум дверям значило бы, что экран собирает свой предмет из кусков.
+    const [requests, openRequests] = await Promise.all([listRequests(), openRequestCount()])
+
     return NextResponse.json({
       ok: true,
       candidates: rows,
+      requests,
+      openRequests,
       link: { withEmail: Number(link?.withEmail ?? 0), total: Number(link?.total ?? 0) },
     })
   } catch (e) {

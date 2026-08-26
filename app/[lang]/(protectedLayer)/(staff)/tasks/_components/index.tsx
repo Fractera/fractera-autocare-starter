@@ -1,3 +1,4 @@
+import { appDialogUi } from "@/components/dialog/app-dialog.i18n"
 import { PageHeader } from "@/components/content-page/page-header.server"
 import { tasksUi } from "../_data/ui.i18n"
 import { tasksQueueUi } from "../_widgets/dynamic/tasks-queue/ui.i18n"
@@ -15,7 +16,7 @@ export default function TasksEntry({ lang }: { lang: string }) {
       <div data-app-column className="px-6 py-[var(--page-py-work)]">
         <PageHeader lang={lang} breadcrumbs={[{ label: t.title }]} title={t.title} subtitle={t.subtitle} />
         <div className="mt-6">
-          <TasksQueue lang={lang} ui={ui} />
+          <TasksQueue lang={lang} ui={ui} dialogUi={appDialogUi(lang)} />
         </div>
       </div>
     </main>

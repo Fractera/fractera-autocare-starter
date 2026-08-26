@@ -2,6 +2,7 @@
   "url": "https://aifa.dev",
   "seo": {
     "canonicalBase": "https://aifa.dev",
-    "sitemapUrl": "https://aifa.dev/sitemap.xml"
+    "sitemapUrl": "https://aifa.dev/sitemap.xml",
+    "socialLinks": []
   }
 }

@@ -17,11 +17,22 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+// 🔒 ЧИСЛО, НЕ ВЛЕЗАЮЩЕЕ В ПЛИТКУ, ОБРЕЗАЕТСЯ МНОГОТОЧИЕМ (Рома, 2026-08-25). Дата
+// «04.08.2026» шире своей колонки в сетке итога и вылезала за край плитки.
+//
+// 🔒 `min-w-0` НА ЯЧЕЙКЕ — ГЛАВНАЯ ЧАСТЬ ПОЧИНКИ, И БЕЗ НЕЁ `truncate` НЕ РАБОТАЕТ.
+// У элемента сетки `min-width` по умолчанию равен `auto`, то есть «не уже своего
+// содержимого»: ячейка расширяется под текст, обрезать становится нечего, и одно лишь
+// `truncate` выглядит как невыполненная правка. Тот же `min-w-0` нужен и внутреннему
+// `<span>`, потому что `Metric` — строчный, а `text-overflow` работает у блочного.
+//
+// 🔒 ПОЛНОЕ ЗНАЧЕНИЕ ОСТАЁТСЯ ДОСТУПНЫМ через `title`: обрезанная дата — это скрытая
+// дата, и человек, которому она важна, обязан иметь способ её прочитать.
+function Stat({ label, value, title }: { label: string; value: React.ReactNode; title?: string }) {
   return (
-    <div>
-      <Metric className="tabular-nums">{value}</Metric>
-      <Small className="text-muted-foreground">{label}</Small>
+    <div className="min-w-0">
+      <Metric className="block min-w-0 truncate tabular-nums" title={title}>{value}</Metric>
+      <Small className="block min-w-0 truncate text-muted-foreground" title={label}>{label}</Small>
     </div>
   )
 }
@@ -83,13 +94,13 @@ export function PersonSummary(
           {/* 🔒 ВИЗИТЫ И СТРОКИ УСЛУГ — РАЗНЫЕ ЧИСЛА, И ОБА ПОКАЗАНЫ. Приём с
               двумя услугами даёт одну запись CRM и две строки. Показать одно
               число значило бы, что история под ним не сходится с итогом над ней. */}
-          <Stat label={ui.visits} value={care.visits} />
-          <Stat label={ui.serviceLines} value={visitRows} />
-          <Stat label={ui.spent} value={money(care.ltv)} />
-          <Stat label={ui.lastVisit} value={last ?? <span className="text-muted-foreground">{ui.never}</span>} />
-          <Stat label={ui.nextVisit} value={ahead ?? <span className="text-muted-foreground">{ui.none}</span>} />
+          <Stat label={ui.visits} value={care.visits} title={String(care.visits)} />
+          <Stat label={ui.serviceLines} value={visitRows} title={String(visitRows)} />
+          <Stat label={ui.spent} value={money(care.ltv)} title={money(care.ltv)} />
+          <Stat label={ui.lastVisit} value={last ?? <span className="text-muted-foreground">{ui.never}</span>} title={last ?? ui.never} />
+          <Stat label={ui.nextVisit} value={ahead ?? <span className="text-muted-foreground">{ui.none}</span>} title={ahead ?? ui.none} />
           {typeof care.visits_fail_count === "number" && (
-            <Stat label={ui.missedCount} value={care.visits_fail_count} />
+            <Stat label={ui.missedCount} value={care.visits_fail_count} title={String(care.visits_fail_count)} />
           )}
         </div>
       </section>

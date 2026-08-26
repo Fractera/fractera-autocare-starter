@@ -8,7 +8,7 @@ import type { ImageCropperUi } from "./image-cropper.i18n"
 import type { AppDialogUi } from "@/components/dialog/app-dialog.i18n"
 import { uploadFile, type UploadedFile } from "./upload.service"
 
-type Accept = "image" | "video" | "document" | "any"
+type Accept = "image" | "video" | "audio" | "document" | "any"
 
 type Props = {
   accept?: Accept
@@ -21,11 +21,15 @@ type Props = {
   preview?: boolean
 }
 
+// 🔒 АУДИО ДОБАВЛЕНО (Рома, 2026-08-25): медиатека его принимает, а карта — нет, и
+// поэтому голосовое сообщение пациента было невозможно приложить. Обрезки аудио в
+// проекте НЕТ и в этом шаге не заводится — это его решение; принимаем как есть.
 const ACCEPT_MAP: Record<Accept, string> = {
   image:    "image/*",
   video:    "video/*",
+  audio:    "audio/*",
   document: ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.html,.htm",
-  any:      "image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.html,.htm",
+  any:      "image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.html,.htm",
 }
 
 function FileIcon({ mimeType }: { mimeType: string }) {

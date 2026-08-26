@@ -20,6 +20,18 @@ export type TasksQueueUi = {
   emptyAll: string
   emptyAllHint: string
 
+  /** Отмена рассылки — заказ Ромы 2026-08-25. */
+  cancelSelected: string
+  cancelAll: string
+  cancelling: string
+  confirmTitle: string
+  confirmSelected: string
+  confirmAll: string
+  confirmKeep: string
+  confirmDo: string
+  cancelled: string
+  cancelFailed: string
+  selectRow: string
   colPerson: string
   colReason: string
   colDue: string
@@ -64,6 +76,17 @@ const RU: TasksQueueUi = {
   emptyAll: "Задач ещё не заводили",
   emptyAllHint: "Очередь наполняют сценарии — правила, по которым система решает, кого и когда коснуться. Пока их нет, задачи заводятся руками.",
 
+  cancelSelected: "Отменить рассылку",
+  cancelAll: "Отменить ВСЕ рассылки",
+  cancelling: "Отменяю…",
+  confirmTitle: "Отменить рассылку?",
+  confirmSelected: "Выбранные задачи получат отметку «отменено вручную» и не уйдут людям. Задачи не удаляются: след того, что правило сработало, остаётся — иначе оно заведёт их заново.",
+  confirmAll: "Будут отменены ВСЕ задачи в очереди, включая те, что вы не видите на этой странице. Ни одно сообщение по ним не уйдёт. Задачи не удаляются, а помечаются отменёнными.",
+  confirmKeep: "Оставить как есть",
+  confirmDo: "Да, отменить",
+  cancelled: "Отменено задач: {n}. В очереди осталось: {left}.",
+  cancelFailed: "Не удалось отменить.",
+  selectRow: "Выбрать задачу",
   colPerson: "Человек",
   colReason: "Повод",
   colDue: "Срок",

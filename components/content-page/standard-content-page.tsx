@@ -73,6 +73,55 @@ export type StandardContentPageProps = {
   titleInBody?: boolean
   /** Выравнивание шапки страницы. Проводится в примитив `PageHeader` как есть. */
   align?: "start" | "center"
+  /**
+   * Надзаголовок — короткая метка НАД заголовком страницы. Проводится в примитив как
+   * есть: у `PageHeader` он был с самого начала, а фабрика его не отдавала, и место над
+   * H1 оставалось недостижимым для страницы.
+   */
+  eyebrow?: React.ReactNode
+  /** Свой вид заголовка. Текст `title` при этом остаётся текстом — он нужен мете. */
+  renderTitle?: (title: string) => React.ReactNode
+  /**
+   * Узел ПОД содержимым страницы — приглашение к действию внизу главной.
+   *
+   * ✗ ЗАВЕДЁН ПОТОМУ, ЧТО `afterHero` ОКАЗАЛСЯ НЕ ТЕМ МЕСТОМ (найдено владельцем
+   * 2026-08-25 на живой странице). Имя слота обещает «после первого экрана», и я прочёл
+   * его как «под заголовком». На деле `PageShell` печатает hero, потом afterHero и лишь
+   * потом содержимое с шапкой: на странице, где H1 рисует ШАПКА, а не первый экран,
+   * afterHero встаёт НАД заголовком. Кнопка «Стать клиентом» оказалась выше имени
+   * продукта — так и было на бою.
+   */
+  afterContent?: React.ReactNode
+  /**
+   * Печатать ли строку автора под заголовком.
+   *
+   * ✗ НА ГЛАВНОЙ ОНА ДУБЛИРОВАЛА БЕЙДЖ (найдено владельцем 2026-08-25): имя компании
+   * стояло и НАД заголовком плашкой, и ПОД ним подписью — одно и то же слово дважды на
+   * одном экране. Заказ был ПЕРЕНЕСТИ имя наверх, а я его ДОБАВИЛ, не убрав снизу.
+   *
+   * 🔒 Выключатель, а не удаление: у поста и правовых страниц подпись автора уместна —
+   * там она отвечает на вопрос «кто это написал». На главной такого вопроса нет.
+   */
+  showAuthor?: boolean
+  /**
+   * Черта под шапкой страницы. Проводится в примитив как есть.
+   *
+   * ✗ НА ГЛАВНОЙ ОНА ОКАЗАЛАСЬ ВТОРОЙ ЛИНИЕЙ ПОДРЯД (нашёл Рома 2026-08-25): черта
+   * отделяет заголовок от ТЕКСТА, а у главной текста нет — под заголовком сразу
+   * приглашение. Получилось две горизонтальные линии, отделяющие пустоту от пустоты.
+   *
+   * 🔒 Выключатель, а не удаление: у поста и правовых страниц черта делает своё дело.
+   */
+  showDivider?: boolean
+  /**
+   * Свой воздух над содержимым — для страниц, у которых он часть замысла.
+   *
+   * 🔒 ЭТО НЕ ТРЕТЬЕ ЗНАЧЕНИЕ ШКАЛЫ, и закон оболочки страницы не нарушен: таблица
+   * ритмов по-прежнему знает ровно два — content и work, — и все страницы берут их
+   * оттуда. Здесь ОДНА страница добавляет свой отступ ПОВЕРХ ритма: это её решение о
+   * себе, а не новая ступень шкалы, доступная всем.
+   */
+  columnClassName?: string
   /** Роль необязательна: в `APP-CONFIG` её нет, и выдумывать её нельзя. */
   author?: { name: string; role?: string; url?: string }
   /**
@@ -118,12 +167,18 @@ export function StandardContentPage({
   subtitle,
   titleInBody = false,
   align = "start",
+  eyebrow,
+  renderTitle,
   author = { name: projectAuthor().name, role: projectAuthor().role, url: projectAuthor().url },
+  showAuthor = true,
+  showDivider = true,
+  columnClassName,
   metaItems,
   heroImage,
   heroAlt,
   hero,
   afterHero,
+  afterContent,
   blocks,
   faq,
   backHref,
@@ -189,6 +244,7 @@ export function StandardContentPage({
       hero={heroBlock ? <PostBody blocks={[heroBlock]} lang={lang} /> : undefined}
       afterHero={afterHero}
       outro={outroBlock ? <PostBody blocks={[outroBlock]} lang={lang} /> : undefined}
+      className={columnClassName}
     >
 
         {/* 1–2. Шапка страницы — ОДИН примитив на весь сайт.
@@ -204,11 +260,14 @@ export function StandardContentPage({
           <PageHeader
             lang={lang}
             breadcrumbs={breadcrumbs}
+            eyebrow={eyebrow}
             tags={tags}
-            title={title}
+            title={renderTitle ? renderTitle(title) : title}
+            titleAsIs={Boolean(renderTitle)}
             subtitle={subtitle}
             metaItems={metaItems}
-            author={author}
+            author={showAuthor ? author : undefined}
+            divider={showDivider}
             align={align}
           />
         )}
@@ -250,6 +309,10 @@ export function StandardContentPage({
             Ведёт на уровень выше; у корня сайта такого уровня нет, поэтому её
             может не быть вовсе (шаг 508). */}
         {backHref && <BackLink href={backHref} label={backLabel} />}
+
+        {/* Приглашение к действию — ПОСЛЕ содержимого и внутри колонки: оно относится к
+            прочитанному, а не предваряет его. */}
+        {afterContent}
 
     </PageShell>
   )

@@ -10,7 +10,9 @@ import { DrawerProvider } from "@/providers/drawer-provider.client";
 import { TopMenu } from "@/components/menu/top/top-menu.server";
 import { FooterMenu } from "@/components/menu/footer/footer-menu.server";
 import { DrawerMenu } from "@/components/menu/drawer/drawer-menu.server";
-import { ViewportBadge } from "@/components/dev/viewport-badge.client";
+// 🪦 Снят вместе с вызовом ниже (Рома, 2026-08-25). Импорт без потребителя — это
+// предупреждение линтера, а в строгой сборке и отказ; поэтому уходит парой.
+// import { ViewportBadge } from "@/components/dev/viewport-badge.client";
 import { bodyFontClass } from "@/lib/fonts";
 import { getAppConfig } from "@/config/app-config";
 import { constructMetadata } from "@/lib/construct-metadata";
@@ -158,9 +160,21 @@ export default async function LangLayout({
                 until a group enables its side's slot. */}
             <DrawerMenu side="left" lang={lang} />
             <DrawerMenu side="right" lang={lang} />
-            {/* Индикатор ширины экрана — только в разработке; в боевой сборке
-                компонент вырезается целиком (см. его файл), а не прячется. */}
-            <ViewportBadge />
+            {/* 🪦 ИНДИКАТОР ШИРИНЫ ЭКРАНА СНЯТ 2026-08-25 по слову Ромы: «в этом проекте
+                нам больше не нужен инструмент, который находится в левом нижнем углу и
+                подсвечивает ширину экрана, но не удаляй его — может быть, в будущем
+                понадобится».
+
+                🔒 СНЯТ ВЫЗОВ, А НЕ ФАЙЛ. `components/dev/viewport-badge.client.tsx` лежит
+                на месте нетронутым: владелец попросил временно, и возвращается индикатор
+                снятием этих двух строк с комментария. Удалить файл значило бы, что
+                «в будущем» его придётся писать заново по памяти — а восстановленный по
+                памяти инструмент отличается в мелочах, которых не видно до первой поломки.
+
+                Напоминание о прежнем устройстве: он и так показывался ТОЛЬКО в разработке
+                и вырезался из боевой сборки целиком (см. его файл). То есть на живом сайте
+                его не видел никто — но Рома работает и в дев-режиме, и там угол занят. */}
+            {/* <ViewportBadge /> */}
             {/* Cookie-consent banner (step 305) — on every public page via this layout. Strings are
                 server-provided per language (readBannerConfig, ISR) so anonymous visitors get a fully
                 localized banner without hitting the gated /api. */}

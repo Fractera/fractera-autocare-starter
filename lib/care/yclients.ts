@@ -1,4 +1,5 @@
 import "server-only"
+import { integrationKey } from "@/lib/company/keys"
 
 // КЛИЕНТ К YCLIENTS — единственное место, которое знает про эту CRM.
 //
@@ -20,8 +21,9 @@ const API = "https://api.yclients.com"
  * нет: приходит просто 401.
  */
 function authHeader(): string {
-  const partner = process.env.YCLIENTS_PARTNER_TOKEN
-  const user = process.env.YCLIENTS_USER_TOKEN
+  // 🔒 Тот же общий читатель, что у канала (шаг 29): файл сильнее окружения.
+  const partner = integrationKey("YCLIENTS_PARTNER_TOKEN")
+  const user = integrationKey("YCLIENTS_USER_TOKEN")
   if (!partner || !user) {
     // 🔒 ОТКАЗ ГРОМКИЙ. Молчаливое «нет ключей → пустой список» неотличимо от
     // «в филиале нет клиентов»: синхронизация отчиталась бы об успехе, записав

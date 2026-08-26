@@ -1,6 +1,6 @@
 // @api list the live model names this key can actually use
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync } from "fs";
+import { openAiKey } from "@/lib/openai-key";
 import { getSession } from "@/lib/auth/get-session";
 
 // Live OpenAI model list for the slot's model pickers (step 207.19, owner rule: model choice is ALWAYS
@@ -36,14 +36,12 @@ function familyWeight(id: string): number {
   return 0;
 }
 
+// 🪦 ЗДЕСЬ БЫЛА ТРЕТЬЯ КОПИЯ ЧТЕНИЯ КЛЮЧА, и `lib/openai-key.ts` заведён ровно ради того,
+// чтобы её не было: «одна из копий однажды научится читать новый источник, а две другие
+// продолжат отвечать «ключа нет»». В шаге 29 источник добавился — и предсказание сбылось
+// буквально: эта копия не узнала бы про ключ, введённый администратором на экране.
 function slotKey(): string {
-  if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
-  // The step-context env quirk (207.16): fall back to reading .env.local directly.
-  try {
-    const raw = readFileSync(`${process.cwd()}/.env.local`, "utf-8");
-    const m = raw.match(/^OPENAI_API_KEY=(.+)$/m);
-    return m ? m[1].trim() : "";
-  } catch { return ""; }
+  return openAiKey();
 }
 
 let cache: { at: number; payload: unknown } | null = null;

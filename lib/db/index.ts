@@ -431,6 +431,59 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS care_service_protocols_category
     ON care_service_protocols (category);
 
+  -- Заявка «хочу стать клиентом» — её оставляет вошедший человек с ролью user.
+  --
+  -- 🔒 ЭТО НЕ ЗАДАЧА И НЕ КЛИЕНТ, И ПОТОМУ СВОЯ ТАБЛИЦА (шаг 28). Задача в
+  -- care_tasks требует person_id NOT NULL REFERENCES care_people, то есть она
+  -- ВСЕГДА о существующем клиенте. Заявку шлёт тот, кого в базе ещё нет, — в этом
+  -- её смысл. Положить её в задачи значило бы либо выдумать человека в CRM, либо
+  -- снять ограничение, которое там стоит по делу.
+  --
+  -- 🔒 УЧЁТНАЯ ЗАПИСЬ ХРАНИТСЯ ИДЕНТИФИКАТОРОМ, А НЕ КОПИЕЙ ЧЕЛОВЕКА. Записи живут
+  -- в службе авторизации на порту 3001; вторая копия разошлась бы с первой в тот день,
+  -- когда кто-то сменит почту. Почта здесь — СЛЕПОК на момент заявки: менеджеру
+  -- нужен адрес, по которому человек согласился, чтобы связаться.
+  CREATE TABLE IF NOT EXISTS care_client_requests (
+    id          TEXT PRIMARY KEY NOT NULL,
+    user_id     TEXT NOT NULL,
+    full_name   TEXT NOT NULL,
+    email       TEXT NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'new'
+      CHECK (status IN ('new','contacted','accepted','declined')),
+    note        TEXT,
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+  -- 🔒 ОДНА ОТКРЫТАЯ ЗАЯВКА НА ЧЕЛОВЕКА — ГАРАНТИЯ В БАЗЕ, А НЕ ТОЛЬКО В КОДЕ.
+  -- Тот же приём, что у задач: код проверяет, индекс не даёт. Без него двойное
+  -- нажатие даёт менеджеру очередь из одной и той же просьбы.
+  CREATE UNIQUE INDEX IF NOT EXISTS care_client_requests_one_open
+    ON care_client_requests (user_id)
+    WHERE status IN ('new','contacted');
+  CREATE INDEX IF NOT EXISTS care_client_requests_status
+    ON care_client_requests (status, created_at);
+
+  -- Реестр складов: куда разошлось одно сообщение переписки (шаг 34).
+  --
+  -- 🔒 ИДЕМПОТЕНТНОСТЬ ДЕРЖИТСЯ ИНДЕКСОМ, А НЕ ПРОВЕРКАМИ В КОДЕ. Служба каналов
+  -- повторяет доставку, если мы не ответили вовремя; без индекса гонка двух вставок
+  -- положит два артефакта на одно сообщение, и оба будут выглядеть законными.
+  -- Паттерн взят у tgdesk_artifacts: тот же род задачи, то же решение.
+  CREATE TABLE IF NOT EXISTS care_artifacts (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    message_id TEXT NOT NULL,
+    -- media | vector | rag
+    kind       TEXT NOT NULL,
+    -- Для вектора — его идентификатор; для графа — ИМЯ ИСТОЧНИКА, а не id документа:
+    -- движок строит документ в фоне и выдаёт свой идентификатор позже, а имя мы задали
+    -- сами и находим по нему в любой момент.
+    ref        TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS care_artifacts_once
+    ON care_artifacts (message_id, kind, ref);
+  CREATE INDEX IF NOT EXISTS care_artifacts_message ON care_artifacts (message_id);
+
   -- Аудит-след действий.
   --
   -- 🔒 ПРИ УДАЛЕНИИ ЗАДАЧИ ЗАПИСЬ ОТВЯЗЫВАЕТСЯ, А НЕ СТИРАЕТСЯ (перенесено из
@@ -749,6 +802,68 @@ const LATE_COLUMNS = [
   `ALTER TABLE tgdesk_entries ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed'`,
   `ALTER TABLE tgdesk_entries ADD COLUMN currency TEXT`,
   `ALTER TABLE tgdesk_messages ADD COLUMN bundle INTEGER`,
+  // 🔒 ВЛОЖЕНИЕ СООБЩЕНИЯ — ТРИ ПОЗДНИЕ КОЛОНКИ, А НЕ ПРАВКА `SCHEMA` (шаг 25).
+  // `care_messages` уже существует на обеих машинах, и `CREATE TABLE IF NOT EXISTS`
+  // её не тронет: объявленная в схеме колонка не появилась бы нигде, кроме свежей
+  // базы, а слой данных ответил бы `no such column` на каждый запрос переписки.
+  // Это уже оплачено живой поломкой в шаге 10.
+  //
+  // 🔒 В БАЗЕ ЛЕЖИТ АДРЕС, А НЕ ФАЙЛ. Картинка уходит в медиахранилище через
+  // `services/upload`, сюда попадает только ссылка на неё: база переписки не место
+  // для двоичного, и раздутая строка утащила бы за собой каждый запрос ветки.
+  `ALTER TABLE care_messages ADD COLUMN attachment_url  TEXT`,
+  `ALTER TABLE care_messages ADD COLUMN attachment_mime TEXT`,
+  `ALTER TABLE care_messages ADD COLUMN attachment_name TEXT`,
+  // 🔒 СОСТОЯНИЕ ДОСТАВКИ — ОТДЕЛЬНАЯ КОЛОНКА, А НЕ НОВОЕ ЗНАЧЕНИЕ `status`.
+  // У `status` стоит `CHECK (status IN ('received','ai_replied','skipped_unknown','error'))`,
+  // и ограничение в SQLite не догоняет уже созданную таблицу — добавить туда пятое
+  // значение нечем. Но дело даже не в этом: `status` отвечает на вопрос «что мы сделали
+  // с сообщением», а доставка — на «дошло ли оно», и это разные вопросы. `NULL` значит
+  // «неизвестно» и остаётся у всех строк, написанных до появления колонки.
+  `ALTER TABLE care_messages ADD COLUMN delivery TEXT`,
+  // 🔒 ЧАСТИ СООБЩЕНИЯ ПО СТАНДАРТУ AI SDK (решение владельца 2026-08-25, шаг 26):
+  // «не уходи от существующего стандарта формирования сообщений… в противном случае у нас
+  // получается какой-то костыль».
+  //
+  // Здесь лежит массив `UIMessagePart` — тот самый тип, которым говорит `ai@6` и который
+  // `PromptInput` отдаёт на входе (`FileUIPart = { type:'file', mediaType, filename?, url }`).
+  // ✗ Три колонки `attachment_*` выше — моя ошибка проектирования шага 25: я разбирал
+  // стандартную структуру в плоские поля, чтобы на выходе собирать обратно, и терял при
+  // этом всё, ради чего стандарт существует: НЕСКОЛЬКО частей, их порядок и их типы.
+  // Колонки остаются — в них лежат написанные строки, — но новые сообщения пишутся сюда.
+  `ALTER TABLE care_messages ADD COLUMN parts TEXT`,
+  // 🔒 ЗАМЕТКИ ВЕЕРА (шаг 34). Отказ склада обязан быть виден В СТРОКЕ СООБЩЕНИЯ, а не
+  // только в ответе двери: ответ читает служба каналов и выбрасывает, и разбираться
+  // потом будет некому и не по чему. Колонка добавляется поздно — таблица уже создана.
+  `ALTER TABLE care_messages ADD COLUMN notes TEXT`,
+  // 🔒 КАКИМ КАНАЛОМ УШЛО И ЧТО ОТВЕТИЛА СЛУЖБА (шаг 35). ✗ Раньше не хранилось ни то,
+  // ни другое: экран не мог показать маршрут, потому что мы сами его не знали — канал
+  // выбирала служба по своему списку, и обратно он к нам не возвращался.
+  `ALTER TABLE care_messages ADD COLUMN channel_used TEXT`,
+  // Причина СЛОВАМИ СЛУЖБЫ («Пользователь не найден в Telegram»), а не кодом: код
+  // объясняет отказ разработчику, слова — человеку, который должен решить, что чинить.
+  `ALTER TABLE care_messages ADD COLUMN delivery_detail TEXT`,
+  // Идентификатор доставки у шлюза — по нему приходит ПОЗДНИЙ статус. Без него событие
+  // о недоставке не с чем сопоставить, и оно теряется.
+  `ALTER TABLE care_messages ADD COLUMN gateway_delivery_id TEXT`,
+  // 🔒 КТО ОТПРАВИЛ: manager | ai | timer (шаг 36, заказ Ромы 2026-08-25).
+  //
+  // ✗ ПОЧЕМУ НЕ ХВАТИЛО `ai_generated`. Та колонка отвечает «да/нет», то есть знает ДВА
+  // состояния, а их три: живой оператор, автоответ модели и рассылка по таймеру. Третье
+  // не выражается булевым значением ни при каком толковании, и попытка втиснуть его
+  // («ai_generated=1, но по расписанию») кончилась бы догадками при чтении.
+  //
+  // Старая колонка остаётся: по ней уже помечены написанные строки, и её читает экран
+  // переписки. Новая — источник правды для новых.
+  `ALTER TABLE care_messages ADD COLUMN origin TEXT`,
+  // 🔒 ПРИЗНАК ТЕСТОВОЙ ЗАПИСИ (шаг 30). Тестовый клиент живёт в ТЕХ ЖЕ таблицах, что
+  // настоящие: экраны, правила и сегменты читают базу, и класть его отдельно значило бы
+  // проверять продукт мимо продукта. Но неотличимый от настоящего он попадёт в рассылку
+  // по правилу «не был 60 дней» и в счётчики аудита — то есть исказит и деньги, и
+  // решения. Признак и есть та граница, которая делает проверку безопасной.
+  `ALTER TABLE care_people ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE care_visits ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE care_cases ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0`,
 ]
 
 async function initRemoteSchema() {

@@ -22,6 +22,8 @@ export type PatientsTableUi = {
   colLastVisit: string
   colAhead: string
   colSpent: string
+  /** Подпись входа в карточку: и заголовок колонки, и `aria-label` кнопки. */
+  openCard: string
   /** Человек снял согласие: ему писать нельзя. */
   noConsent: string
   /** Визитов в истории нет вовсе. */
@@ -55,6 +57,7 @@ const RU: PatientsTableUi = {
   colLastVisit: "Последний визит",
   colAhead: "Записан вперёд",
   colSpent: "Потрачено",
+  openCard: "Открыть карточку",
   noConsent: "не писать",
   never: "не был",
   noAhead: "нет",

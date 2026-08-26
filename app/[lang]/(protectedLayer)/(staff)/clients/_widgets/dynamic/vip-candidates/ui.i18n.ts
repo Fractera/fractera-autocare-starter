@@ -9,6 +9,9 @@ export type VipCandidatesUi = {
   empty: string
   emptyHint: string
 
+  requestsTitle: string
+  requestsEmpty: string
+  requestsNew: string
   howTitle: string
   howText: string
   linkStat: string
@@ -33,6 +36,9 @@ const RU: VipCandidatesUi = {
   empty: "Считать пока нечего",
   emptyHint: "Ценность считается по истории визитов. Пока синхронизация не привезла данные, ранжировать некого.",
 
+  requestsTitle: "Сами попросились в клиенты",
+  requestsEmpty: "Заявок пока нет. Форма стоит на главной у каждого вошедшего, кто ещё не клиент.",
+  requestsNew: "ждёт",
   howTitle: "Как назначить VIP",
   howText: "Роль живёт в учётных записях, а не здесь: человек в CRM и учётная запись на сайте — разные вещи, и связать их можно только по почте. Этот экран отвечает, КОМУ давать роль; сама выдача — на странице учётных записей.",
   linkStat: "Почта известна у {n} человек из {total} — остальных сопоставить с учётной записью не по чему.",

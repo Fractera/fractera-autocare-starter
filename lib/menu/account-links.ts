@@ -10,6 +10,7 @@ import { analyticsUi } from "@/app/[lang]/(protectedLayer)/(staff)/analytics/_da
 import { auditUi } from "@/app/[lang]/(protectedLayer)/(staff)/audit/_data/ui.i18n"
 import { clientsUi } from "@/app/[lang]/(protectedLayer)/(staff)/clients/_data/ui.i18n"
 import { companyUi } from "@/app/[lang]/(protectedLayer)/(admin)/company/_data/ui.i18n"
+import { channelsUi } from "@/app/[lang]/(protectedLayer)/(admin)/channels/_data/ui.i18n"
 import type { DrawerLink } from "@/components/menu/account/account-drawer.client"
 
 // РАБОЧИЕ РАЗДЕЛЫ, которые ящик аккаунта показывает вошедшему.
@@ -57,5 +58,8 @@ export function accountLinks(lang: string): DrawerLink[] {
     { href: `/${lang}/audit`, label: auditUi(lang).title, group: "staff" },
     { href: `/${lang}/clients`, label: clientsUi(lang).title, group: "staff" },
     { href: `/${lang}/company`, label: companyUi(lang).title, group: "admin" },
+    // Настройка каналов связи — рядом с данными компании: обе про то, как учреждение
+    // представлено вовне, но отвечают на разные вопросы (кто мы / как мы разговариваем).
+    { href: `/${lang}/channels`, label: channelsUi(lang).title, group: "admin" },
   ]
 }

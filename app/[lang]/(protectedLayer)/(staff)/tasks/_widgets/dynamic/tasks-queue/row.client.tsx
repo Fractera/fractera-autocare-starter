@@ -4,12 +4,13 @@
 
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { humanDate, today, phone } from "./format"
 import { statusWord, type TasksQueueUi } from "./ui.i18n"
 import type { TaskRow } from "./use-queue"
 
 export function QueueRow(
-  { row, ui, lang, striped }: { row: TaskRow; ui: TasksQueueUi; lang: string; striped: boolean },
+  { row, ui, lang, striped, selected, onSelect }: { row: TaskRow; ui: TasksQueueUi; lang: string; striped: boolean; selected: boolean; onSelect: (id: string, on: boolean) => void },
 ) {
   const due = humanDate(row.due_date)
   const t = today()
@@ -62,6 +63,20 @@ export function QueueRow(
       </td>
 
       <td className="px-4 py-2.5">{statusWord(row.status, ui)}</td>
+
+      {/* 🔒 КРУЖОЧЕК СПРАВА, КАК ПОПРОСИЛ ВЛАДЕЛЕЦ, И ТОЛЬКО У ТЕХ, ЧТО ЕЩЁ НЕ УШЛИ.
+          У задачи со статусом «связались» сообщение уже у человека: галочка рядом с ней
+          обещала бы отмену того, что отменить нельзя. */}
+      <td className="w-10 px-4 py-2.5 text-right">
+        {["new", "in_progress", "postponed"].includes(row.status) && (
+          <Checkbox
+            checked={selected}
+            aria-label={ui.selectRow}
+            onCheckedChange={v => onSelect(row.id, Boolean(v))}
+            className="rounded-full"
+          />
+        )}
+      </td>
     </tr>
   )
 }

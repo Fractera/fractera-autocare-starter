@@ -10,6 +10,8 @@ export type PersonCardUi = {
   notFound: string
   notFoundHint: string
   back: string
+  /** Кнопка перехода в переписку с этим человеком. */
+  openChat: string
 
   contacts: string
   phone: string
@@ -55,6 +57,7 @@ const RU: PersonCardUi = {
   notFound: "Такого человека в базе нет",
   notFoundHint: "Возможно, адрес открыт по старой ссылке, а строку убрали.",
   back: "Ко всем людям",
+  openChat: "Перейти в чат",
 
   contacts: "Связь",
   phone: "Телефон",

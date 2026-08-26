@@ -67,6 +67,7 @@ export function PatientsTable({ lang, ui }: { lang: string; ui: PatientsTableUi 
                   <th className="w-32 px-4 py-2.5 text-left font-medium text-muted-foreground">{ui.colLastVisit}</th>
                   <th className="w-32 px-4 py-2.5 text-left font-medium text-muted-foreground">{ui.colAhead}</th>
                   <th className="w-32 px-4 py-2.5 text-right font-medium text-muted-foreground">{ui.colSpent}</th>
+                  <th className="w-36 px-4 py-2.5 text-right font-medium text-muted-foreground">{ui.openCard}</th>
                 </tr>
               </thead>
               <tbody>

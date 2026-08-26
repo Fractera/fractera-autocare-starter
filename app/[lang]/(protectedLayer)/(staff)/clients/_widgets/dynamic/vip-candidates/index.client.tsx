@@ -12,6 +12,15 @@
 // идти.
 
 import { useState, useEffect, useCallback, useRef } from "react"
+
+/** Строка заявки — форма взята у слоя данных, а не выдумана здесь. */
+type ClientRequestRow = {
+  id: string
+  full_name: string
+  email: string
+  status: string
+  created_at: string
+}
 import { toast } from "sonner"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
@@ -45,6 +54,7 @@ export function VipCandidates({ lang, ui }: { lang: string; ui: VipCandidatesUi 
   const [loading, setLoading] = useState(true)
   const [rows, setRows] = useState<Candidate[]>([])
   const [link, setLink] = useState<{ withEmail: number; total: number }>({ withEmail: 0, total: 0 })
+  const [requests, setRequests] = useState<ClientRequestRow[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -57,6 +67,7 @@ export function VipCandidates({ lang, ui }: { lang: string; ui: VipCandidatesUi 
       }
       setRows(Array.isArray(j.candidates) ? j.candidates : [])
       setLink(j.link ?? { withEmail: 0, total: 0 })
+      setRequests(Array.isArray(j.requests) ? j.requests : [])
     } catch {
       toast.error(ui.unreachable)
     } finally {
@@ -69,6 +80,30 @@ export function VipCandidates({ lang, ui }: { lang: string; ui: VipCandidatesUi 
 
   return (
     <>
+      {/* 🔒 ЗАЯВКИ СТОЯТ ВЫШЕ КАНДИДАТОВ, И ЭТО НЕ ПОРЯДОК ПО ВАЖНОСТИ, А ПОРЯДОК ПО
+          СРОЧНОСТИ. Кандидатов посчитала машина по выручке — они никуда не денутся.
+          Заявку оставил ЖИВОЙ человек и ждёт ответа: она портится от времени, а список
+          кандидатов нет. */}
+      <section className="mb-6">
+        <H4 variant="ui" className="mb-2">{ui.requestsTitle}</H4>
+        {requests.length === 0 ? (
+          <p className="text-xs text-muted-foreground">{ui.requestsEmpty}</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {requests.map(r => (
+              <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3 text-xs">
+                <span className="font-medium text-foreground">{r.full_name}</span>
+                <span className="text-muted-foreground">{r.email}</span>
+                {(r.status === "new" || r.status === "contacted") && (
+                  <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-normal">{ui.requestsNew}</Badge>
+                )}
+                <span className="ml-auto tabular-nums text-[10px] text-muted-foreground">{r.created_at.slice(0, 10)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <div className="mb-6 rounded-xl border border-border bg-muted/20 p-4">
         <H4 variant="ui" className="mb-2">{ui.howTitle}</H4>
         <p className="text-xs leading-relaxed text-muted-foreground">{ui.howText}</p>

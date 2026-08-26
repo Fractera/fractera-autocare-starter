@@ -89,6 +89,12 @@ export function FooterMenu({ lang }: { lang: string }) {
   // удалением данных. Теперь это выключатель, а записи остаются на месте.
   const socials = featureOn("socials") ? footerSocials(cfg.seo) : [];
   const address = cfg.geo?.address;
+  // 🔒 ТЕЛЕФОН УЧРЕЖДЕНИЯ — В ПОДВАЛЕ, РЯДОМ С АДРЕСОМ (шаг 22, заказ Ромы 2026-08-25).
+  // Это то место, где посетитель его ищет, и то место, ради которого администратору дали
+  // экран правки: без витрины поле было бы настройкой, которую никто не видит.
+  // `tel:` вместо простого текста — на телефоне это одно нажатие вместо переписывания
+  // номера; из номера убираются пробелы и скобки, потому что набирает их машина.
+  const phone = cfg.geo?.phone;
 
   // Кнопка настроек cookie появляется РОВНО тогда, когда есть сам баннер: она
   // его и открывает. Баннер выключен — кнопка вела бы в никуда.
@@ -260,6 +266,14 @@ export function FooterMenu({ lang }: { lang: string }) {
               © {new Date().getFullYear()} {cfg.short_name}.<span className="hidden sm:inline"> {ui.rights}</span>
             </span>
             {address && <span className="text-xs text-muted-foreground truncate">{address}</span>}
+            {phone && (
+              <a
+                href={`tel:${phone.replace(/[^0-9+]/g, "")}`}
+                className="text-xs text-muted-foreground truncate hover:text-foreground transition-colors"
+              >
+                {phone}
+              </a>
+            )}
           </div>
 
           {/* Desktop cluster — inline socials + theme + language */}

@@ -73,6 +73,30 @@ export type ContentPageConfig<C extends ContentPageContent> = {
    * строятся здесь и от этого признака не зависят — фабрика по-прежнему получает
    * `title` из материала.
    */
+  /**
+   * Надзаголовок над H1 — бейдж имени компании на главной (заказ Ромы 2026-08-25).
+   * Функция от языка, потому что значение приходит из конфига и читается на СЕРВЕРЕ:
+   * отдать сюда готовый узел значило бы вычислить его на сборке и заморозить, а конфиг
+   * меняется в панели без пересборки.
+   */
+  eyebrow?: (lang: string) => ReactNode
+  /**
+   * Как НАРИСОВАТЬ заголовок, если обычного H1 мало (мерцание на главной).
+   *
+   * 🔒 ЭТО ОТДЕЛЬНЫЙ СЛОТ, А НЕ ЗАМЕНА `title`. Строка `title` уходит в мету, в
+   * OpenGraph и в разметку для машин — там нужен ТЕКСТ, и подсунуть туда узел значило бы
+   * отдать поисковику вместо имени страницы кусок разметки. Поэтому текст остаётся
+   * текстом, а здесь описывается только его вид.
+   */
+  renderTitle?: (title: string) => ReactNode
+  /** Узел ПОД содержимым страницы. Для приглашения внизу главной — см.  выше. */
+  afterContent?: (lang: string) => ReactNode
+  /** Печатать ли подпись автора под заголовком. На главной она дублирует бейдж. */
+  showAuthor?: boolean
+  /** Черта под шапкой. На главной она отделяет пустоту от пустоты. */
+  showDivider?: boolean
+  /** Свой воздух над содержимым страницы. Проводится в  как есть. */
+  columnClassName?: string
   titleInBody?: boolean
   /** Выравнивание шапки страницы: `start` (по умолчанию) или `center`. */
   align?: "start" | "center"
@@ -105,7 +129,7 @@ function abs(path: string): string {
 }
 
 export function createContentPage<C extends ContentPageContent>(config: ContentPageConfig<C>) {
-  const { resolve, chrome, meta, jsonLdType = 'Article', sections, hero, afterHero, titleInBody = false, align = "start" } = config
+  const { resolve, chrome, meta, jsonLdType = 'Article', sections, hero, afterHero, titleInBody = false, align = "start", eyebrow, renderTitle, afterContent, showAuthor = true, showDivider = true, columnClassName } = config
 
   async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
     const { lang } = await params
@@ -214,9 +238,15 @@ export function createContentPage<C extends ContentPageContent>(config: ContentP
           breadcrumbs={breadcrumbs}
           tags={meta.tags ? [...meta.tags] : undefined}
           title={c.title}
+          renderTitle={renderTitle}
+          afterContent={afterContent?.(lang)}
+          showAuthor={showAuthor}
+          showDivider={showDivider}
+          columnClassName={columnClassName}
           subtitle={c.subtitle}
           titleInBody={titleInBody}
           align={align}
+          eyebrow={eyebrow?.(lang)}
           heroImage={meta.heroImage}
           heroAlt={c.title}
           hero={hero?.(lang)}
